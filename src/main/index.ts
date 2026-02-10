@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
 
@@ -6,7 +6,9 @@ let mainWindow: BrowserWindow | null = null
 let workspaceWatcher: fs.FSWatcher | null = null
 
 // 配置文件路径（userData 目录是 Electron 官方推荐的用户数据存储位置）
-const CONFIG_FILE = path.join(app.getPath('userData'), 'config.json')
+function getConfigPath(): string {
+  return path.join(app.getPath('userData'), 'config.json')
+}
 
 // 默认配置
 interface AppConfig {
@@ -19,9 +21,9 @@ interface AppConfig {
 // 读取配置
 async function readConfig(): Promise<AppConfig> {
   try {
-    const exists = await fs.promises.access(CONFIG_FILE).then(() => true).catch(() => false)
+    const exists = await fs.promises.access(getConfigPath()).then(() => true).catch(() => false)
     if (exists) {
-      const data = await fs.promises.readFile(CONFIG_FILE, 'utf-8')
+      const data = await fs.promises.readFile(getConfigPath(), 'utf-8')
       return JSON.parse(data)
     }
   } catch (error) {
@@ -39,7 +41,7 @@ async function writeConfig(config: AppConfig): Promise<void> {
     if (!dirExists) {
       await fs.promises.mkdir(userDataDir, { recursive: true })
     }
-    await fs.promises.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
+    await fs.promises.writeFile(getConfigPath(), JSON.stringify(config, null, 2), 'utf-8')
   } catch (error) {
     console.error('Error writing config:', error)
   }
@@ -49,6 +51,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    icon: path.join(__dirname, '../../build/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       nodeIntegration: false,
@@ -69,6 +72,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // 移除默认菜单栏
+  Menu.setApplicationMenu(null)
   createWindow()
 
   app.on('activate', () => {

@@ -4,12 +4,14 @@ const path = require("path");
 const fs = require("fs");
 let mainWindow = null;
 let workspaceWatcher = null;
-const CONFIG_FILE = path.join(electron.app.getPath("userData"), "config.json");
+function getConfigPath() {
+  return path.join(electron.app.getPath("userData"), "config.json");
+}
 async function readConfig() {
   try {
-    const exists = await fs.promises.access(CONFIG_FILE).then(() => true).catch(() => false);
+    const exists = await fs.promises.access(getConfigPath()).then(() => true).catch(() => false);
     if (exists) {
-      const data = await fs.promises.readFile(CONFIG_FILE, "utf-8");
+      const data = await fs.promises.readFile(getConfigPath(), "utf-8");
       return JSON.parse(data);
     }
   } catch (error) {
@@ -24,7 +26,7 @@ async function writeConfig(config) {
     if (!dirExists) {
       await fs.promises.mkdir(userDataDir, { recursive: true });
     }
-    await fs.promises.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+    await fs.promises.writeFile(getConfigPath(), JSON.stringify(config, null, 2), "utf-8");
   } catch (error) {
     console.error("Error writing config:", error);
   }
@@ -33,6 +35,7 @@ function createWindow() {
   mainWindow = new electron.BrowserWindow({
     width: 1400,
     height: 900,
+    icon: path.join(__dirname, "../../build/icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.js"),
       nodeIntegration: false,
@@ -50,6 +53,7 @@ function createWindow() {
   }
 }
 electron.app.whenReady().then(() => {
+  electron.Menu.setApplicationMenu(null);
   createWindow();
   electron.app.on("activate", () => {
     if (electron.BrowserWindow.getAllWindows().length === 0) {

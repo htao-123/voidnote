@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="void-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a855f7"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景填充 -->
+  <rect x="0" y="0" width="512" height="512" rx="90" fill="url(#void-grad)"/>
+
+  <!-- 外框 -->
+  <rect x="56" y="56" width="400" height="400" rx="80" fill="rgba(255,255,255,0.95)"/>
+
+  <!-- V 字母 -->
+  <path d="M140 140 L256 400 L372 140" stroke="url(#void-grad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="256" cy="256" r="30" fill="url(#void-grad)"/>
+  <circle cx="256" cy="110" r="10" fill="url(#void-grad)" opacity="0.7"/>
+</svg>
