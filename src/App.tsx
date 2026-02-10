@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import EditorContent from './components/EditorContent'
 import Breadcrumb from './components/Breadcrumb'
+import DocumentStats from './components/DocumentStats'
 import SettingsModal from './components/SettingsModal'
 import { useDocumentStore } from './stores/documentStore'
 
@@ -62,6 +63,9 @@ function App() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 面包屑导航 */}
         {currentDocument && <Breadcrumb />}
+
+        {/* 文档统计 */}
+        {currentDocument && <DocumentStats />}
 
         {/* 编辑器区域 */}
         {currentDocument ? (

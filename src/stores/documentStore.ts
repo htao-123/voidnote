@@ -23,6 +23,9 @@ interface DocumentStore {
   hasUnsavedChanges: boolean
   lastSavedTime: number | null
 
+  // 统计信息
+  getWordCount: (content: string) => { words: number; chars: number; readTime: number }
+
   // 操作方法
   setCurrentDocument: (document: Document | null) => void
   setSelectedDocumentId: (id: string | null) => void
@@ -391,5 +394,35 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       // 这里模拟 Electron IPC 的参数格式
       callback(null, data)
     })
+  },
+
+  // 获取字数统计
+  getWordCount: (content: string) => {
+    // 移除 HTML 标签，获取纯文本
+    const text = content.replace(/<[^>]*>/g, '').trim()
+
+    // 中文字符数
+    const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length
+
+    // 英文单词数
+    const englishWords = (text.match(/[a-zA-Z]+/g) || []).length
+
+    // 数字数量
+    const numbers = (text.match(/\d+/g) || []).length
+
+    // 总字符数（不包括空格和标点）
+    const totalChars = text.replace(/\s+/g, '').length
+
+    // 总字数（中文+英文+数字）
+    const totalWords = chineseChars + englishWords + numbers
+
+    // 阅读时间（假设：中文 400字/分钟，英文 200词/分钟）
+    const readTimeMinutes = Math.ceil((chineseChars / 400) + (englishWords / 200) + (numbers / 400))
+
+    return {
+      words: totalWords,
+      chars: totalChars,
+      readTime: readTimeMinutes
+    }
   },
 }))
