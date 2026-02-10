@@ -36,5 +36,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getWorkspace: () => ipcRenderer.invoke('get-workspace'),
   setWorkspace: (workspace: { path: string; name: string }) =>
     ipcRenderer.invoke('set-workspace', workspace),
-  clearWorkspace: () => ipcRenderer.invoke('clear-workspace')
+  clearWorkspace: () => ipcRenderer.invoke('clear-workspace'),
+
+  // 导出功能
+  saveHTMLFile: (fileName: string, content: string) =>
+    ipcRenderer.invoke('save-html-file', { fileName, content }),
+  exportPDFFile: (fileName: string, htmlContent: string) =>
+    ipcRenderer.invoke('export-pdf-file', { fileName, htmlContent })
 })

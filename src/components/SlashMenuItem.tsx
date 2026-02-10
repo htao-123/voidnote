@@ -68,8 +68,8 @@ export const SlashMenuItem = forwardRef<any, SlashMenuItemProps>(
     }
 
     return (
-      <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[280px] max-h-[400px] overflow-y-auto">
-        <div className="text-xs text-gray-500 px-2 py-1 mb-1">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 min-w-[280px] max-h-[400px] overflow-y-auto">
+        <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">
           基础模块
         </div>
         {filteredItems.map((item, index) => {
@@ -81,18 +81,18 @@ export const SlashMenuItem = forwardRef<any, SlashMenuItemProps>(
               key={item.title}
               onClick={() => selectItem(index)}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors ${
-                isActive ? 'bg-blue-50' : 'hover:bg-gray-100'
+                isActive ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-600'
               }`}
             >
-              <div className="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center">
-                {Icon && <Icon className="w-5 h-5 text-gray-600" />}
+              <div className="w-10 h-10 rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                {Icon && <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-800">{item.title}</div>
-                <div className="text-xs text-gray-500">{item.description}</div>
+                <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.title}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
               </div>
               {isActive && (
-                <Check className="w-4 h-4 text-blue-600" />
+                <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               )}
             </button>
           )

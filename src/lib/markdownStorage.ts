@@ -1,5 +1,4 @@
 import { Document } from '../types/document'
-import TurndownService from 'turndown'
 
 // 简单的路径连接函数（用于渲染进程）
 function joinPath(...parts: string[]): string {
@@ -20,12 +19,6 @@ function sanitizeFilename(name: string): string {
     .trim()                         // 去除首尾空格
     .substring(0, 200)               // 限制长度
 }
-
-// HTML 转 Markdown
-const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  codeBlockStyle: 'fenced',
-})
 
 interface WorkspaceInfo {
   path: string
@@ -145,28 +138,19 @@ class MarkdownStorage {
     }
 
     try {
-      // 直接使用文档标题，不调用 generateUniqueTitle
-      // 因为我们假设用户的文档标题是唯一的
-      // 如果文件已存在，直接覆盖
       const uniqueTitle = doc.title
-
       const filePath = this.getDocumentPath(doc, allDocuments)
       console.log('[MarkdownStorage] Saving document:', uniqueTitle, 'to path:', filePath)
 
-      // 转换 HTML 内容为 Markdown
-      let markdownContent = doc.content
+      // 使用 JSON 格式存储，避免转义问题
+      let contentToSave = doc.json || ''
 
-      // 如果是 HTML，尝试转换
-      if (doc.content && (doc.content.startsWith('<') || doc.content.includes('<'))) {
-        markdownContent = turndownService.turndown(doc.content)
+      // 如果没有 JSON 字段，生成空的 TipTap JSON
+      if (!contentToSave) {
+        contentToSave = JSON.stringify({ type: 'doc', content: [] })
       }
 
-      // 添加标题作为一级标题（如果内容中没有）
-      if (!markdownContent.startsWith('#')) {
-        markdownContent = '# ' + uniqueTitle + '\n\n' + markdownContent
-      }
-
-      const result = await window.electronAPI.saveMarkdown(filePath, markdownContent)
+      const result = await window.electronAPI.saveMarkdown(filePath, contentToSave)
 
       if (result.success) {
         console.log('[MarkdownStorage] Document saved successfully:', filePath)
@@ -210,8 +194,7 @@ class MarkdownStorage {
     }
 
     try {
-      const result = await window.electronAPI.loadMarkdownFolder(this.workspace.path)
-      return result
+      return await window.electronAPI.loadMarkdownFolder(this.workspace.path)
     } catch (error: any) {
       return { success: false, error: error.message }
     }

@@ -21,6 +21,8 @@ import {
   Undo,
   Redo,
   Download,
+  FileText,
+  File,
   Keyboard,
   Trash2,
   ArrowUpToLine,
@@ -33,8 +35,10 @@ import {
 import { useCurrentEditor, useEditorState } from '@tiptap/react'
 import { cn } from '../lib/utils'
 import { exportToMarkdown } from '../lib/shortcuts'
+import { ExportManager } from '../lib/exportDocument'
 import { useDocumentStore } from '../stores/documentStore'
 import { useState, useEffect } from 'react'
+import InputPrompt from './InputPrompt'
 
 export default function Toolbar() {
   const { editor } = useCurrentEditor()
@@ -43,6 +47,9 @@ export default function Toolbar() {
     saveDocument,
   } = useDocumentStore()
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [linkPrompt, setLinkPrompt] = useState({ isOpen: false })
+  const [imagePrompt, setImagePrompt] = useState({ isOpen: false })
+  const [imageChoicePrompt, setImageChoicePrompt] = useState({ isOpen: false })
 
   // 键盘快捷键监听
   useEffect(() => {
@@ -137,35 +144,10 @@ export default function Toolbar() {
         editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
         break
       case 'link':
-        const url = window.prompt('输入链接地址:')
-        if (url) {
-          editor.chain().focus().setLink({ href: url }).run()
-        }
+        setLinkPrompt({ isOpen: true })
         break
       case 'image':
-        // 首先询问用户是想使用 URL 还是本地文件
-        const choice = window.prompt('选择图片来源：\n1. 输入 URL (输入 url)\n2. 选择本地文件 (输入 file)\n\n请输入选择 (url/file):')
-
-        if (choice === 'url') {
-          const imageUrl = window.prompt('输入图片地址:')
-          if (imageUrl) {
-            editor.chain().focus().setImage({ src: imageUrl }).run()
-          }
-        } else if (choice === 'file') {
-          // 使用 Electron API 选择本地文件
-          if (window.electronAPI && window.electronAPI.selectImageFile) {
-            const base64Image = await window.electronAPI.selectImageFile()
-            if (base64Image) {
-              editor.chain().focus().setImage({ src: base64Image }).run()
-            }
-          } else {
-            // 降级到 URL 输入
-            const imageUrl = window.prompt('输入图片地址:')
-            if (imageUrl) {
-              editor.chain().focus().setImage({ src: imageUrl }).run()
-            }
-          }
-        }
+        setImageChoicePrompt({ isOpen: true })
         break
       case 'alignLeft':
         editor.chain().focus().setTextAlign('left').run()
@@ -178,6 +160,12 @@ export default function Toolbar() {
         break
       case 'exportMarkdown':
         handleExportMarkdown()
+        break
+      case 'exportHTML':
+        await handleExportHTML()
+        break
+      case 'exportPDF':
+        await handleExportPDF()
         break
       case 'toggleShortcuts':
         setShowShortcuts(!showShortcuts)
@@ -220,6 +208,32 @@ export default function Toolbar() {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  const handleExportHTML = async () => {
+    if (!currentDocument) {
+      alert('请先打开一个文档')
+      return
+    }
+
+    try {
+      await ExportManager.exportAsHTML(currentDocument)
+    } catch (error: any) {
+      alert(`导出 HTML 失败: ${error.message}`)
+    }
+  }
+
+  const handleExportPDF = async () => {
+    if (!currentDocument) {
+      alert('请先打开一个文档')
+      return
+    }
+
+    try {
+      await ExportManager.exportAsPDF(currentDocument)
+    } catch (error: any) {
+      alert(`导出 PDF 失败: ${error.message}`)
+    }
   }
   const toolbarGroups = [
     // 历史记录
@@ -290,10 +304,12 @@ export default function Toolbar() {
         { icon: AlignRight, action: 'alignRight', title: '右对齐' },
       ],
     },
-    // 导出
+    // 主题和导出
     {
       items: [
         { icon: Download, action: 'exportMarkdown', title: '导出 Markdown' },
+        { icon: FileText, action: 'exportHTML', title: '导出 HTML' },
+        { icon: File, action: 'exportPDF', title: '导出 PDF' },
         { icon: Keyboard, action: 'toggleShortcuts', title: '快捷键' },
       ],
     },
@@ -301,11 +317,11 @@ export default function Toolbar() {
 
   return (
     <div className="relative">
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 bg-white overflow-x-auto">
+      <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-x-auto">
         <div className="flex items-center gap-1 min-w-max">
           {toolbarGroups.map((group, groupIndex) => (
             <div key={groupIndex} className="flex items-center gap-0.5">
-              {groupIndex > 0 && <div className="w-px h-6 bg-gray-200 mx-2" />}
+              {groupIndex > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2" />}
               {group.items.map((item) => {
                 const Icon = item.icon
                 return (
@@ -317,7 +333,7 @@ export default function Toolbar() {
                       (item.action === 'redo' && !editorState.canRedo)
                     }
                     className={cn(
-                      "p-2 hover:bg-gray-100 rounded-md transition-colors flex-shrink-0",
+                      "p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md transition-colors flex-shrink-0",
                       (item.action === 'bold' && editorState.isBold) ||
                       (item.action === 'italic' && editorState.isItalic) ||
                       (item.action === 'underline' && editorState.isUnderline) ||
@@ -333,7 +349,7 @@ export default function Toolbar() {
                       (item.action === 'alignLeft' && editorState.isAlignLeft) ||
                       (item.action === 'alignCenter' && editorState.isAlignCenter) ||
                       (item.action === 'alignRight' && editorState.isAlignRight)
-                        ? "bg-blue-100 text-blue-600"
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "",
                       ((item.action === 'undo' && !editorState.canUndo) ||
                       (item.action === 'redo' && !editorState.canRedo))
@@ -342,7 +358,7 @@ export default function Toolbar() {
                     )}
                     title={item.title}
                   >
-                    <Icon className="w-4 h-4 text-gray-700" />
+                    <Icon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
                   </button>
                 )
               })}
@@ -358,12 +374,12 @@ export default function Toolbar() {
             className="fixed inset-0 bg-black/20 z-10"
             onClick={() => setShowShortcuts(false)}
           />
-          <div className="absolute right-4 top-14 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20 w-80">
+          <div className="absolute right-4 top-14 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-20 w-80">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-800">键盘快捷键</h3>
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">键盘快捷键</h3>
               <button
                 onClick={() => setShowShortcuts(false)}
-                className="p-1 hover:bg-gray-100 rounded"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -372,33 +388,108 @@ export default function Toolbar() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">粗体</span>
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+B</kbd>
+                <span className="text-gray-600 dark:text-gray-400">粗体</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">Ctrl+B</kbd>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">斜体</span>
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+I</kbd>
+                <span className="text-gray-600 dark:text-gray-400">斜体</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">Ctrl+I</kbd>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">插入链接</span>
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+K</kbd>
+                <span className="text-gray-600 dark:text-gray-400">插入链接</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">Ctrl+K</kbd>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">撤销</span>
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+Z</kbd>
+                <span className="text-gray-600 dark:text-gray-400">撤销</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">Ctrl+Z</kbd>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">重做</span>
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+Shift+Z</kbd>
+                <span className="text-gray-600 dark:text-gray-400">重做</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">Ctrl+Shift+Z</kbd>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">快捷菜单</span>
-                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">/</kbd>
+                <span className="text-gray-600 dark:text-gray-400">快捷菜单</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">/</kbd>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 dark:text-gray-400">保存</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">Ctrl+S</kbd>
               </div>
             </div>
           </div>
         </>
       )}
+
+      {/* 链接输入对话框 */}
+      <InputPrompt
+        isOpen={linkPrompt.isOpen}
+        title="插入链接"
+        message="请输入链接地址："
+        placeholder="https://example.com"
+        onConfirm={(value) => {
+          if (value.trim()) {
+            const url = value.trim()
+            // 检查是否有选中的文本
+            const { from, to } = editor.state.selection
+            const hasSelection = from !== to
+
+            if (hasSelection) {
+              // 有选中文本，直接转换为链接
+              editor.chain().focus().setLink({ href: url }).run()
+            } else {
+              // 没有选中文本，插入 URL 作为链接文本
+              editor.chain().focus().insertContent([
+                {
+                  type: 'text',
+                  text: url,
+                  marks: [{ type: 'link', attrs: { href: url } }]
+                }
+              ]).run()
+            }
+          }
+          setLinkPrompt({ isOpen: false })
+        }}
+        onCancel={() => setLinkPrompt({ isOpen: false })}
+      />
+
+      {/* 图片选择对话框 */}
+      <InputPrompt
+        isOpen={imageChoicePrompt.isOpen}
+        title="选择图片来源"
+        message='输入 "url" 使用网络图片，输入 "file" 选择本地文件'
+        placeholder="url 或 file"
+        onConfirm={async (value) => {
+          const choice = value.trim().toLowerCase()
+          setImageChoicePrompt({ isOpen: false })
+
+          if (choice === 'url') {
+            setImagePrompt({ isOpen: true })
+          } else if (choice === 'file') {
+            if (window.electronAPI?.selectImageFile) {
+              const base64Image = await window.electronAPI.selectImageFile()
+              if (base64Image) {
+                editor.chain().focus().setImage({ src: base64Image }).run()
+              }
+            }
+          }
+        }}
+        onCancel={() => setImageChoicePrompt({ isOpen: false })}
+      />
+
+      {/* 图片 URL 输入对话框 */}
+      <InputPrompt
+        isOpen={imagePrompt.isOpen}
+        title="插入图片"
+        message="请输入图片地址："
+        placeholder="https://example.com/image.jpg"
+        onConfirm={(value) => {
+          if (value.trim()) {
+            editor.chain().focus().setImage({ src: value.trim() }).run()
+          }
+          setImagePrompt({ isOpen: false })
+        }}
+        onCancel={() => setImagePrompt({ isOpen: false })}
+      />
     </div>
   )
 }

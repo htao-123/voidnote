@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import EditorContent from './components/EditorContent'
 import Breadcrumb from './components/Breadcrumb'
-import DocumentStats from './components/DocumentStats'
 import SettingsModal from './components/SettingsModal'
 import { useDocumentStore } from './stores/documentStore'
+import { useThemeStore } from './stores/themeStore'
 
 function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const { currentDocument, loadFromWorkspace, initialize, selectWorkspace, restoreWorkspace } = useDocumentStore()
+  const { initializeTheme } = useThemeStore()
 
   // 初始化应用
   useEffect(() => {
+    // 初始化主题
+    initializeTheme()
+
     const initApp = async () => {
       // 使用 Electron 官方推荐的方式：从 userData 目录恢复工作区配置
       const restored = await restoreWorkspace()
@@ -44,14 +48,14 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <div className="text-gray-400">加载中...</div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-white dark:bg-gray-900">
       {/* 侧边栏 */}
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -63,9 +67,6 @@ function App() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 面包屑导航 */}
         {currentDocument && <Breadcrumb />}
-
-        {/* 文档统计 */}
-        {currentDocument && <DocumentStats />}
 
         {/* 编辑器区域 */}
         {currentDocument ? (

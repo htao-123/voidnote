@@ -148,15 +148,18 @@ ipcMain.handle('load-markdown-folder', async (_, workspacePath: string) => {
         if (!file.isDirectory() && file.name.endsWith('.md')) {
           const fullPath = path.join(dir, file.name)
           try {
-            const content = await fs.promises.readFile(fullPath, 'utf-8')
+            const fileContent = await fs.promises.readFile(fullPath, 'utf-8')
             const stats = await fs.promises.stat(fullPath)
             const title = file.name.slice(0, -3)
 
             const docId = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+
+            // 文件内容直接作为 TipTap JSON
             const doc = {
               id: docId,
               title,
-              content,
+              content: '',  // 不再使用 content 字段
+              json: fileContent,
               parentId,
               createdAt: stats.mtime.getTime(),
               updatedAt: stats.mtime.getTime(),
@@ -406,4 +409,85 @@ ipcMain.handle('clear-workspace', async () => {
   delete config.workspace
   await writeConfig(config)
   return { success: true }
+})
+
+// ========== 导出功能 ==========
+
+// 保存 HTML 文件
+ipcMain.handle('save-html-file', async (_, { fileName, content }) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow!, {
+      defaultPath: fileName,
+      filters: [
+        { name: 'HTML Files', extensions: ['html'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (result.canceled || !result.filePath) {
+      return { success: false, canceled: true }
+    }
+
+    await fs.promises.writeFile(result.filePath, content, 'utf-8')
+    return { success: true, filePath: result.filePath }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+})
+
+// 导出 PDF 文件
+ipcMain.handle('export-pdf-file', async (_, { fileName, htmlContent }) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow!, {
+      defaultPath: fileName,
+      filters: [
+        { name: 'PDF Files', extensions: ['pdf'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (result.canceled || !result.filePath) {
+      return { success: false, canceled: true }
+    }
+
+    // 创建一个隐藏的 BrowserWindow 来渲染 HTML
+    const pdfWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+      },
+    })
+
+    // 加载 HTML 内容
+    await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`)
+
+    // 等待页面加载完成
+    await new Promise<void>((resolve) => {
+      if (pdfWindow.webContents.isLoading()) {
+        pdfWindow.webContents.on('did-finish-load', () => resolve())
+      } else {
+        resolve()
+      }
+    })
+
+    // 生成 PDF
+    const pdfBuffer = await pdfWindow.webContents.printToPDF({
+      pageSize: 'A4',
+      printBackground: true,
+      landscape: false,
+    })
+
+    // 保存 PDF
+    await fs.promises.writeFile(result.filePath, pdfBuffer)
+
+    // 关闭窗口
+    pdfWindow.close()
+
+    return { success: true, filePath: result.filePath }
+  } catch (error: any) {
+    console.error('PDF export error:', error)
+    return { success: false, error: error.message }
+  }
 })

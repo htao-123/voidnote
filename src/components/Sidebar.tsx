@@ -62,6 +62,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
     const newDoc = addDocument({
       title: uniqueTitle,
       content: '',
+      json: JSON.stringify({ type: 'doc', content: [] }),
       parentId: null,
     })
     setCurrentDocument(newDoc)
@@ -85,6 +86,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
     const newDoc = addDocument({
       title: uniqueTitle,
       content: '',
+      json: JSON.stringify({ type: 'doc', content: [] }),
       parentId,
     })
     setCurrentDocument(newDoc)
@@ -188,24 +190,24 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
       <div key={doc.id} className="group">
         <div
           className={cn(
-            'flex items-center gap-1 px-2 py-1.5 cursor-pointer hover:bg-gray-100 rounded-md mx-1 my-0.5',
-            isSelected && !isEditing && 'bg-blue-50 hover:bg-blue-100'
+            'flex items-center gap-1 px-2 py-1.5 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md mx-1 my-0.5',
+            isSelected && !isEditing && 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
           )}
           style={{ paddingLeft: `${level * 16 + 8}px` }}
           onClick={() => !isEditing && handleSelectDocument(doc)}
         >
           {hasChildren && (
             <button
-              className="p-0.5 hover:bg-gray-200 rounded"
+              className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-600200 rounded"
               onClick={(e) => {
                 e.stopPropagation()
                 toggleFolder(doc.id)
               }}
             >
               {expanded ? (
-                <ChevronDown className="w-4 h-4 text-gray-500" />
+                <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               ) : (
-                <ChevronRight className="w-4 h-4 text-gray-500" />
+                <ChevronRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               )}
             </button>
           )}
@@ -225,19 +227,19 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
                       if (e.key === 'Escape') handleCancelEdit()
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 px-2 py-0.5 text-sm bg-white border border-blue-500 rounded focus:outline-none"
+                    className="flex-1 px-2 py-0.5 text-sm bg-white dark:bg-gray-800 border border-blue-500 rounded focus:outline-none"
                   />
-                  <button onClick={handleSaveEdit} className="p-1 hover:bg-gray-200 rounded">
+                  <button onClick={handleSaveEdit} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600200 rounded">
                     <Check className="w-4 h-4 text-green-600" />
                   </button>
-                  <button onClick={handleCancelEdit} className="p-1 hover:bg-gray-200 rounded">
+                  <button onClick={handleCancelEdit} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600200 rounded">
                     <X className="w-4 h-4 text-red-600" />
                   </button>
                 </div>
               ) : (
                 <>
                   <span
-                    className={cn('text-sm truncate flex-1', isSelected ? 'text-blue-600 font-medium' : 'text-gray-700')}
+                    className={cn('text-sm truncate flex-1', isSelected ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300')}
                   >
                     {doc.title}
                   </span>
@@ -247,32 +249,32 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
                         e.stopPropagation()
                         setContextMenuId(contextMenuId === doc.id ? null : doc.id)
                       }}
-                      className="p-0.5 hover:bg-gray-200 rounded opacity-0 group-hover:opacity-100"
+                      className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-600200 rounded opacity-0 group-hover:opacity-100"
                     >
-                      <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                      <MoreHorizontal className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     </button>
                     {showContextMenu && (
                       <div
                         ref={contextMenuRef}
-                        className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[120px]"
+                        className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10 min-w-[120px]"
                       >
                         <button
                           onClick={() => handleCreateChildDocument(doc.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                         >
                           <PlusCircle className="w-4 h-4" />
                           添加子文档
                         </button>
                         <button
                           onClick={(e) => handleStartEdit(e, doc)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                         >
                           <Pencil className="w-4 h-4" />
                           重命名
                         </button>
                         <button
                           onClick={() => handleDelete(doc.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-gray-100"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-gray-200 dark:hover:bg-gray-600"
                         >
                           <Trash2 className="w-4 h-4" />
                           删除
@@ -299,7 +301,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
   const renderSearchResults = () => {
     if (searchResults.length === 0) {
       return (
-        <div className="px-4 py-8 text-center text-sm text-gray-500">
+        <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
           <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
           <p>未找到匹配的文档</p>
         </div>
@@ -308,7 +310,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
 
     return (
       <div className="px-2">
-        <div className="px-2 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <div className="px-2 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           找到 {searchResults.length} 个结果
         </div>
         {searchResults.map(({ doc, path }) => {
@@ -318,8 +320,8 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
               key={doc.id}
               onClick={() => handleSelectDocument(doc)}
               className={cn(
-                'flex items-center gap-2 px-2 py-2 cursor-pointer hover:bg-gray-100 rounded-md mx-1 my-0.5',
-                isSelected && 'bg-blue-50 hover:bg-blue-100'
+                'flex items-center gap-2 px-2 py-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md mx-1 my-0.5',
+                isSelected && 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
               )}
             >
               <FileText className={cn('w-4 h-4 flex-shrink-0', isSelected ? 'text-blue-600' : 'text-gray-500')} />
@@ -342,17 +344,17 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
   }
 
   return (
-    <div className={cn('bg-gray-50 border-r border-gray-200 flex flex-col', collapsed ? 'w-12' : 'w-64')}>
+    <div className={cn('bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 dark:border-gray-700 flex flex-col', collapsed ? 'w-12' : 'w-64')}>
       {/* 头部 */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-3">
-          {!collapsed && <h1 className="text-lg font-semibold text-gray-800">VoidNote</h1>}
+          {!collapsed && <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">VoidNote</h1>}
           <button
-            className={cn('p-1.5 hover:bg-gray-200 rounded-md transition-colors', collapsed && 'w-full')}
+            className={cn('p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600200 rounded-md transition-colors', collapsed && 'w-full')}
             onClick={onToggle}
           >
             <svg
-              className={cn('w-5 h-5 text-gray-600 transition-transform', collapsed && 'rotate-180')}
+              className={cn('w-5 h-5 text-gray-600 dark:text-gray-300 transition-transform', collapsed && 'rotate-180')}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -372,14 +374,14 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
                 placeholder="搜索文档..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             {/* 新建按钮 */}
             <button
               onClick={handleCreateDocument}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
               新建文档
@@ -396,7 +398,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
               <button
                 key={doc.id}
                 onClick={() => handleSelectDocument(doc)}
-                className={cn('p-2 rounded-md hover:bg-gray-200', selectedDocumentId === doc.id && 'bg-blue-100')}
+                className={cn('p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600200', selectedDocumentId === doc.id && 'bg-blue-100')}
                 title={doc.title}
               >
                 <FileText className={cn('w-5 h-5', selectedDocumentId === doc.id ? 'text-blue-600' : 'text-gray-500')} />
@@ -414,25 +416,25 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
 
       {/* 底部 */}
       {!collapsed && (
-        <div className="p-3 border-t border-gray-200 space-y-2">
+        <div className="p-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
           <button
             onClick={onOpenSettings}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             <Settings className="w-4 h-4" />
             设置
           </button>
-          <div className="text-xs text-gray-500 text-center">{documents.length} 个文档</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center">{documents.length} 个文档</div>
         </div>
       )}
       {collapsed && onOpenSettings && (
-        <div className="p-3 border-t border-gray-200">
+        <div className="p-3 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onOpenSettings}
-            className="w-full p-2 hover:bg-gray-200 rounded-md transition-colors"
+            className="w-full p-2 hover:bg-gray-200 dark:hover:bg-gray-600200 rounded-md transition-colors"
             title="设置"
           >
-            <Settings className="w-5 h-5 text-gray-600" />
+            <Settings className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
       )}

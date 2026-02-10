@@ -14,7 +14,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import TextAlign from '@tiptap/extension-text-align'
 import FileHandler from '@tiptap/extension-file-handler'
 import { common, createLowlight } from 'lowlight'
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useDocumentStore } from '../stores/documentStore'
 import { SlashCommandExtension } from '../extensions/slash-command-extension'
 import CustomCodeBlock from '../extensions/CustomCodeBlock'
@@ -23,7 +23,7 @@ import Toolbar from './Toolbar'
 const lowlight = createLowlight(common)
 
 export default function EditorContent() {
-  const { currentDocument, updateDocument } = useDocumentStore()
+  const { currentDocument, updateDocument, triggerAutoSave } = useDocumentStore()
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -37,6 +37,7 @@ export default function EditorContent() {
       }),
       Placeholder.configure({
         placeholder: '输入 / 唤起快捷命令，或直接开始输入...',
+        emptyEditorClass: 'is-editor-empty',
       }),
       Link.configure({
         openOnClick: false,
@@ -99,20 +100,48 @@ export default function EditorContent() {
       }),
       SlashCommandExtension,
     ],
-    content: currentDocument?.content || '',
+    // 不在初始化时设置 content，避免双重设置导致转义问题
+    content: '',
     editorProps: {
       attributes: {
-        class: 'focus:outline-none min-h-full px-8 py-6',
+        class: 'focus:outline-none',
       },
     },
     onUpdate: ({ editor }) => {
       if (currentDocument) {
+        const json = editor.getJSON()
+        // 只使用 JSON 格式保存内容，避免所有转义问题
         updateDocument(currentDocument.id, {
-          content: editor.getHTML(),
+          content: '',
+          json: JSON.stringify(json),
         })
+        // 触发自动保存
+        triggerAutoSave()
       }
     },
   })
+
+  // 当当前文档改变时更新编辑器内容
+  useEffect(() => {
+    if (editor && currentDocument) {
+      // 使用 JSON 格式加载内容
+      if (currentDocument.json) {
+        try {
+          const jsonContent = JSON.parse(currentDocument.json)
+          editor.commands.setContent(jsonContent, {
+            emitUpdate: false,
+          })
+        } catch (e) {
+          console.error('[EditorContent] JSON parse error:', e)
+          // JSON 解析失败，初始化为空内容
+          editor.commands.setContent('', { emitUpdate: false })
+        }
+      } else {
+        // 新建文档，初始化为空内容
+        editor.commands.setContent('', { emitUpdate: false })
+      }
+    }
+  }, [currentDocument?.id, editor])
 
   const providerValue = useMemo(() => ({ editor }), [editor])
 
@@ -122,10 +151,16 @@ export default function EditorContent() {
 
   return (
     <EditorContext.Provider value={providerValue}>
-      <div className="flex-1 flex flex-col">
-        <Toolbar />
-        <div className="flex-1 overflow-auto">
-          <TiptapEditorContent editor={editor} />
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* 工具栏 - 固定在顶部 */}
+        <div className="flex-shrink-0">
+          <Toolbar />
+        </div>
+        {/* 编辑器内容区域 - 可滚动 */}
+        <div className="flex-1 h-full overflow-auto px-8 py-6">
+          <div className="min-h-0">
+            <TiptapEditorContent editor={editor} />
+          </div>
         </div>
       </div>
     </EditorContext.Provider>

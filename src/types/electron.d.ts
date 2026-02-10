@@ -79,6 +79,10 @@ interface ElectronAPI {
   getWorkspace: () => Promise<WorkspaceConfig | null>
   setWorkspace: (workspace: WorkspaceConfig) => Promise<{ success: boolean }>
   clearWorkspace: () => Promise<{ success: boolean }>
+
+  // 导出功能
+  saveHTMLFile: (fileName: string, content: string) => Promise<{ success: boolean; filePath?: string; error?: string; canceled?: boolean }>
+  exportPDFFile: (fileName: string, htmlContent: string) => Promise<{ success: boolean; filePath?: string; error?: string; canceled?: boolean }>
 }
 
 declare global {

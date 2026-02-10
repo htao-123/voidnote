@@ -153,14 +153,14 @@ export default function CodeBlockComponent(props: ReactNodeViewProps) {
 
   return (
     <NodeViewWrapper className="code-block-node-view">
-      <div className="relative my-4 rounded-lg border border-gray-300">
+      <div className="relative my-4 rounded-lg border border-gray-300 dark:border-gray-700">
         {/* 工具栏 */}
-        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-t-lg">
+        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
           {/* 语言标签 */}
           <div className="relative" ref={languageMenuRef}>
             <button
               type="button"
-              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
               onClick={() => setShowLanguageMenu(!showLanguageMenu)}
             >
               <span>{getLanguageLabel()}</span>
@@ -181,7 +181,7 @@ export default function CodeBlockComponent(props: ReactNodeViewProps) {
 
             {/* 语言下拉菜单 */}
             {showLanguageMenu && (
-              <div className="absolute top-full left-0 mt-1 w-48 max-h-64 overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-xl z-[9999]">
+              <div className="absolute top-full left-0 mt-1 w-48 max-h-64 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-xl z-[9999]">
                 <div className="py-1">
                   {LANGUAGES.map((lang) => (
                     <button
@@ -190,7 +190,7 @@ export default function CodeBlockComponent(props: ReactNodeViewProps) {
                       className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                         currentLanguage === lang.value
                           ? 'bg-blue-500 text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600'
                       }`}
                       onClick={() => selectLanguage(lang.value)}
                     >
@@ -207,8 +207,8 @@ export default function CodeBlockComponent(props: ReactNodeViewProps) {
             type="button"
             className={`flex items-center gap-1.5 px-2 py-1 text-sm rounded transition-colors ${
               copied
-                ? 'text-green-600 bg-green-50'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
             onClick={copyCode}
           >
@@ -236,13 +236,13 @@ export default function CodeBlockComponent(props: ReactNodeViewProps) {
         </div>
 
         {/* 代码内容区域 */}
-        <div className="flex bg-gray-50 rounded-b-lg overflow-hidden">
+        <div className="flex bg-gray-50 dark:bg-gray-900 rounded-b-lg overflow-hidden">
           {/* 行号 */}
-          <div className="flex-shrink-0 w-8 text-center select-none bg-gray-50">
+          <div className="flex-shrink-0 w-8 text-center select-none bg-gray-50 dark:bg-gray-900">
             <pre className="!m-0 !p-0 !rounded-none py-[0.75rem]">
               <code className="line-numbers">
                 {lineNumbers.map((lineNum, index) => (
-                  <span key={lineNum} className="block text-gray-400 hover:text-gray-600 transition-colors">
+                  <span key={lineNum} className="block text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors">
                     {lineNum}
                     {index < lineNumbers.length - 1 && '\n'}
                   </span>
@@ -263,7 +263,7 @@ export default function CodeBlockComponent(props: ReactNodeViewProps) {
         </div>
 
         {/* 底部区域 */}
-        <div className="px-3 py-4 bg-gray-50 rounded-b-lg"></div>
+        <div className="px-3 py-4 bg-gray-50 dark:bg-gray-900 rounded-b-lg"></div>
       </div>
     </NodeViewWrapper>
   )

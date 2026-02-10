@@ -34,7 +34,6 @@
 /* TipTap 编辑器样式 */
 .ProseMirror {
   outline: none;
-  min-height: 100%;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -102,6 +101,22 @@
   color: #374151;
 }
 
+/* 深色模式 - 编辑器内容样式 */
+.dark .ProseMirror h1,
+.dark .ProseMirror h2,
+.dark .ProseMirror h3 {
+  color: #f3f4f6;
+}
+
+.dark .ProseMirror p,
+.dark .ProseMirror li {
+  color: #d1d5db;
+}
+
+.dark .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: #6b7280;
+}
+
 .ProseMirror li > p {
   margin: 0;
 }
@@ -158,6 +173,10 @@
   font-style: italic;
 }
 
+.dark .ProseMirror blockquote {
+  color: #9ca3af;
+}
+
 /* 代码块样式 */
 .ProseMirror pre {
   background-color: #1e1e1e;
@@ -205,6 +224,11 @@
   font-size: 0.875rem !important;
   display: block;
   color: #374151;
+}
+
+/* 深色模式 - 代码块 */
+.dark .ProseMirror .code-block-node-view pre code {
+  color: #e5e7eb;
 }
 
 /* 行号容器样式 - 必须与 code 完全一致 */
@@ -334,6 +358,10 @@
   margin: 2rem 0;
 }
 
+.dark .ProseMirror hr {
+  border-top-color: #374151;
+}
+
 /* 表格样式 */
 .ProseMirror table {
   border-collapse: collapse;
@@ -357,6 +385,16 @@
   font-weight: 600;
   text-align: left;
   background-color: #f9fafb;
+}
+
+.dark .ProseMirror table td,
+.dark .ProseMirror table th {
+  border-color: #4b5563;
+}
+
+.dark .ProseMirror table th {
+  background-color: #1f2937;
+  color: #f3f4f6;
 }
 
 .ProseMirror table .selectedCell:after {
@@ -433,4 +471,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
