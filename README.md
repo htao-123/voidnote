@@ -1,36 +1,257 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VoidNote - 极简 Markdown 知识库
 
-## Getting Started
+> 基于 Electron + React + TipTap 构建的极简风格 Markdown 知识库应用
 
-First, run the development server:
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Electron](https://img.shields.io/badge/Electron-40.2-blue.svg)](https://www.electronjs.org/)
+[![React](https://img.shields.io/badge/React-19.1-blue.svg)](https://react.dev/)
+
+## ✨ 特性
+
+- 📝 **富文本编辑** - 基于 TipTap 的强大编辑器
+- 🎨 **极简 UI 设计** - 专注于内容，界面简洁
+- 🌳 **文档树管理** - 支持嵌套文件夹结构
+- ⌨️ **快捷键支持** - 高效的键盘操作
+- 💾 **Markdown 存储** - 文档以 Markdown 格式存储
+- 🖼️ **图片支持** - 支持 URL 和本地图片
+- 🔍 **全局搜索** - 快速查找文档内容
+
+## 🛠️ 技术栈
+
+| 技术 | 版本 | 用途 |
+|------|------|------|
+| **Electron** | 34.3.1 | 桌面应用框架 |
+| **React** | 19.1.0 | 前端框架 |
+| **Vite** | 6.2.3 | 构建工具 |
+| **TypeScript** | 5.8.3 | 类型安全 |
+| **TipTap** | 3.19.0 | 富文本编辑器 |
+| **Tailwind CSS** | 3.4.17 | 样式框架 |
+| **Zustand** | 5.0.11 | 状态管理 |
+| **lowlight** | 3.3.0 | 代码语法高亮 |
+
+## 🚀 快速开始
+
+### 安装依赖
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 开发模式
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# 启动 Web 开发服务器
+npm run dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# 启动 Electron 桌面应用
+npm run electron
+```
 
-## Learn More
+### 构建
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# 打包桌面应用
+npm run build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 仅构建不打包
+npm run build:dir
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## ✅ 已实现功能
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 📝 编辑功能
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 富文本编辑 | ✅ | 基于 TipTap 核心编辑器 |
+| Slash Command | ✅ | 输入 `/` 唤起快捷菜单 |
+| 文本格式化 | ✅ | 粗体、斜体、**下划线**、~~删除线~~、`行内代码` |
+| 标题 | ✅ | 一级、二级、三级标题 |
+| 列表 | ✅ | 无序列表、有序列表、任务列表 |
+| 引用块 | ✅ | 支持多行引用 |
+| 代码块 | ✅ | 语法高亮、语言选择器、行号显示、复制按钮 |
+| 分割线 | ✅ | 水平分割线 |
+| 表格 | ✅ | 可调整大小的表格、行列操作 |
+| 链接 | ✅ | 插入和管理链接 |
+| 图片 | ✅ | URL 和本地文件（通过 Electron API） |
+| 占位符 | ✅ | 空白编辑器提示 |
+| 文本对齐 | ✅ | 左对齐、居中、右对齐 |
+| 颜色/高亮 | ✅ | 文本颜色和背景色配置 |
+
+### 📁 文档管理
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 文档树 | ✅ | 支持嵌套的文档结构（parentId） |
+| 创建文档 | ✅ | 新建文档功能 |
+| 重命名文档 | ✅ | 内联编辑文档标题 |
+| 删除文档 | ✅ | 带确认对话框的删除 |
+| 文档搜索 | ✅ | 按标题搜索过滤 |
+| 侧边栏折叠 | ✅ | 收起/展开侧边栏 |
+| 文档展开/收起 | ✅ | 树形结构折叠 |
+
+### 🎯 用户界面
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 工具栏 | ✅ | 完整的格式化工具栏，分组设计 |
+| 侧边栏 | ✅ | 文档导航侧边栏 |
+| 快捷键面板 | ✅ | 显示可用快捷键 |
+| 上下文菜单 | ✅ | 文档操作菜单（重命名、删除） |
+| 状态高亮 | ✅ | 工具栏按钮状态指示 |
+
+### 💾 导出功能
+
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| 导出 Markdown | ✅ | 导出为 .md 文件 |
+
+### ⌨️ 快捷键
+
+| 快捷键 | 功能 | 状态 |
+|--------|------|------|
+| `Ctrl+B` | 粗体 | ✅ |
+| `Ctrl+I` | 斜体 | ✅ |
+| `Ctrl+U` | 下划线 | ✅ |
+| `Ctrl+K` | 插入链接 | ✅ |
+| `Ctrl+Z` | 撤销 | ✅ |
+| `Ctrl+Shift+Z` | 重做 | ✅ |
+| `/` | 快捷菜单 | ✅ |
+| `ArrowDown` | 退出代码块 | ✅ |
+| `Backspace` | 空代码块保护 | ✅ |
+
+---
+
+## 🚧 待开发功能
+
+### 🔴 高优先级
+
+- [ ] **自动保存**
+  - [ ] 可选的自动保存机制（当前为手动保存 Ctrl+S）
+
+- [ ] **深色模式**
+  - [ ] 界面主题切换
+
+- [ ] **更多导出格式**
+  - [ ] 导出 PDF
+  - [ ] 导出 HTML
+
+---
+
+### 🟡 中优先级
+
+- [ ] **编辑体验**
+  - [ ] 全屏模式
+  - [ ] 焦点模式（隐藏侧边栏和工具栏）
+  - [ ] 字体大小调整
+
+- [ ] **文档操作**
+  - [ ] 拖拽排序
+  - [ ] 批量操作
+
+- [ ] **统计信息**
+  - [ ] 字数统计
+  - [ ] 阅读时间估算
+
+---
+
+### ⚪ 低优先级
+
+- [ ] **高级功能**
+  - [ ] 数学公式（KaTeX）
+  - [ ] 自动目录生成
+  - [ ] 版本历史
+
+---
+
+## 📂 项目结构
+
+```
+voidnote/
+├── electron/                  # Electron 主进程
+│   ├── main.cjs              # 主进程入口
+│   └── preload.ts            # 预加载脚本
+├── src/
+│   ├── components/           # React 组件
+│   │   ├── Sidebar.tsx       # 侧边栏
+│   │   ├── Toolbar.tsx       # 工具栏
+│   │   ├── EditorContent.tsx # 编辑器容器
+│   │   ├── CodeBlockComponent.tsx  # 代码块组件
+│   │   ├── SlashMenu.tsx     # Slash 菜单
+│   │   └── SlashMenuItem.tsx # 菜单项
+│   ├── stores/               # 状态管理
+│   │   └── documentStore.ts  # 文档 store
+│   ├── extensions/           # TipTap 扩展
+│   │   ├── CustomCodeBlock.ts    # 自定义代码块
+│   │   └── slash-command-extension.ts
+│   ├── lib/                  # 工具函数
+│   │   ├── utils.ts
+│   │   ├── shortcuts.ts      # 快捷键 & 导出
+│   │   └── suggestion.ts     # 建议配置
+│   ├── types/                # TypeScript 类型
+│   │   └── document.ts
+│   ├── App.tsx               # 主应用
+│   ├── main.tsx              # 入口
+│   └── index.css             # 全局样式
+├── public/                   # 静态资源
+├── package.json
+├── vite.config.ts
+├── tailwind.config.js
+└── tsconfig.json
+```
+
+---
+
+## 🐛 已知问题
+
+- [ ] **撤销/重做** - 部分操作未同步到文档树
+- [ ] **表格编辑** - 表格操作体验需要优化
+
+---
+
+## 📊 功能状态
+
+### ✅ 已实现
+
+- ✅ 富文本编辑（粗体、斜体、下划线、删除线、代码）
+- ✅ 多级标题
+- ✅ 列表（无序、有序、任务）
+- ✅ 代码块（语法高亮、语言选择）
+- ✅ 表格
+- ✅ 引用块
+- ✅ 分割线
+- ✅ 图片（URL + 本地）
+- ✅ 链接
+- ✅ 文本对齐
+- ✅ Slash Command（快捷菜单）
+- ✅ 文档树管理（嵌套文件夹结构）
+- ✅ 全局搜索
+- ✅ 面包屑导航
+- ✅ 手动保存（Ctrl+S）
+- ✅ Markdown 存储
+
+### 🚧 计划中
+
+- [ ] 自动保存
+- [ ] 深色模式
+- [ ] 导出 PDF/HTML
+- [ ] 全屏模式
+- [ ] 拖拽排序
+- [ ] 字数统计
+
+---
+
+## 📄 许可证
+
+MIT License
+
+---
+
+## 🙏 致谢
+
+- [TipTap](https://tiptap.dev/) - 富文本编辑器框架
+- [Electron](https://www.electronjs.org/) - 桌面应用框架
+- [lowlight](https://github.com/lowlightjs/lowlight) - 代码语法高亮
+- [Lucide](https://lucide.dev/) - 图标库

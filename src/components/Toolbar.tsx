@@ -1,0 +1,404 @@
+import {
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  Code,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Minus,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  Table,
+  CheckSquare,
+  Undo,
+  Redo,
+  Download,
+  Keyboard,
+  Trash2,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  Table2,
+  MinusCircle,
+} from 'lucide-react'
+import { useCurrentEditor, useEditorState } from '@tiptap/react'
+import { cn } from '../lib/utils'
+import { exportToMarkdown } from '../lib/shortcuts'
+import { useDocumentStore } from '../stores/documentStore'
+import { useState, useEffect } from 'react'
+
+export default function Toolbar() {
+  const { editor } = useCurrentEditor()
+  const {
+    currentDocument,
+    saveDocument,
+  } = useDocumentStore()
+  const [showShortcuts, setShowShortcuts] = useState(false)
+
+  // 键盘快捷键监听
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      // Ctrl+S 保存
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault()
+        await saveDocument()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [saveDocument])
+
+  // 使用 useEditorState 优化性能，只在相关状态变化时重新渲染
+  const editorState = useEditorState({
+    editor,
+    selector: ({ editor }) => ({
+      isBold: editor?.isActive('bold') ?? false,
+      isItalic: editor?.isActive('italic') ?? false,
+      isUnderline: editor?.isActive('underline') ?? false,
+      isStrike: editor?.isActive('strike') ?? false,
+      isCode: editor?.isActive('code') ?? false,
+      isH1: editor?.isActive('heading', { level: 1 }) ?? false,
+      isH2: editor?.isActive('heading', { level: 2 }) ?? false,
+      isH3: editor?.isActive('heading', { level: 3 }) ?? false,
+      isBulletList: editor?.isActive('bulletList') ?? false,
+      isOrderedList: editor?.isActive('orderedList') ?? false,
+      isTaskList: editor?.isActive('taskList') ?? false,
+      isBlockquote: editor?.isActive('blockquote') ?? false,
+      isAlignLeft: editor?.isActive({ textAlign: 'left' }) ?? false,
+      isAlignCenter: editor?.isActive({ textAlign: 'center' }) ?? false,
+      isAlignRight: editor?.isActive({ textAlign: 'right' }) ?? false,
+      canUndo: editor?.can().undo() ?? false,
+      canRedo: editor?.can().redo() ?? false,
+    }),
+  })
+
+  if (!editor || !editorState) {
+    return null
+  }
+
+  const handleAction = async (action: string) => {
+    switch (action) {
+      case 'undo':
+        editor.chain().focus().undo().run()
+        break
+      case 'redo':
+        editor.chain().focus().redo().run()
+        break
+      case 'h1':
+        editor.chain().focus().toggleHeading({ level: 1 }).run()
+        break
+      case 'h2':
+        editor.chain().focus().toggleHeading({ level: 2 }).run()
+        break
+      case 'h3':
+        editor.chain().focus().toggleHeading({ level: 3 }).run()
+        break
+      case 'bold':
+        editor.chain().focus().toggleBold().run()
+        break
+      case 'italic':
+        editor.chain().focus().toggleItalic().run()
+        break
+      case 'underline':
+        editor.chain().focus().toggleUnderline().run()
+        break
+      case 'strike':
+        editor.chain().focus().toggleStrike().run()
+        break
+      case 'code':
+        editor.chain().focus().toggleCode().run()
+        break
+      case 'bulletList':
+        editor.chain().focus().toggleBulletList().run()
+        break
+      case 'orderedList':
+        editor.chain().focus().toggleOrderedList().run()
+        break
+      case 'taskList':
+        editor.chain().focus().toggleTaskList().run()
+        break
+      case 'blockquote':
+        editor.chain().focus().toggleBlockquote().run()
+        break
+      case 'horizontalRule':
+        editor.chain().focus().setHorizontalRule().run()
+        break
+      case 'table':
+        editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+        break
+      case 'link':
+        const url = window.prompt('输入链接地址:')
+        if (url) {
+          editor.chain().focus().setLink({ href: url }).run()
+        }
+        break
+      case 'image':
+        // 首先询问用户是想使用 URL 还是本地文件
+        const choice = window.prompt('选择图片来源：\n1. 输入 URL (输入 url)\n2. 选择本地文件 (输入 file)\n\n请输入选择 (url/file):')
+
+        if (choice === 'url') {
+          const imageUrl = window.prompt('输入图片地址:')
+          if (imageUrl) {
+            editor.chain().focus().setImage({ src: imageUrl }).run()
+          }
+        } else if (choice === 'file') {
+          // 使用 Electron API 选择本地文件
+          if (window.electronAPI && window.electronAPI.selectImageFile) {
+            const base64Image = await window.electronAPI.selectImageFile()
+            if (base64Image) {
+              editor.chain().focus().setImage({ src: base64Image }).run()
+            }
+          } else {
+            // 降级到 URL 输入
+            const imageUrl = window.prompt('输入图片地址:')
+            if (imageUrl) {
+              editor.chain().focus().setImage({ src: imageUrl }).run()
+            }
+          }
+        }
+        break
+      case 'alignLeft':
+        editor.chain().focus().setTextAlign('left').run()
+        break
+      case 'alignCenter':
+        editor.chain().focus().setTextAlign('center').run()
+        break
+      case 'alignRight':
+        editor.chain().focus().setTextAlign('right').run()
+        break
+      case 'exportMarkdown':
+        handleExportMarkdown()
+        break
+      case 'toggleShortcuts':
+        setShowShortcuts(!showShortcuts)
+        break
+      // 表格操作
+      case 'addRowBefore':
+        editor.chain().focus().addRowBefore().run()
+        break
+      case 'addRowAfter':
+        editor.chain().focus().addRowAfter().run()
+        break
+      case 'deleteRow':
+        editor.chain().focus().deleteRow().run()
+        break
+      case 'addColumnBefore':
+        editor.chain().focus().addColumnBefore().run()
+        break
+      case 'addColumnAfter':
+        editor.chain().focus().addColumnAfter().run()
+        break
+      case 'deleteColumn':
+        editor.chain().focus().deleteColumn().run()
+        break
+      case 'deleteTable':
+        editor.chain().focus().deleteTable().run()
+        break
+    }
+  }
+
+  const handleExportMarkdown = () => {
+    if (!currentDocument) return
+
+    const markdown = exportToMarkdown(editor)
+    const blob = new Blob([markdown], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${currentDocument.title}.md`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+  const toolbarGroups = [
+    // 历史记录
+    {
+      items: [
+        { icon: Undo, action: 'undo', title: '撤销' },
+        { icon: Redo, action: 'redo', title: '重做' },
+      ],
+    },
+    // 标题
+    {
+      items: [
+        { icon: Heading1, action: 'h1', title: '一级标题' },
+        { icon: Heading2, action: 'h2', title: '二级标题' },
+        { icon: Heading3, action: 'h3', title: '三级标题' },
+      ],
+    },
+    // 文本格式
+    {
+      items: [
+        { icon: Bold, action: 'bold', title: '粗体' },
+        { icon: Italic, action: 'italic', title: '斜体' },
+        { icon: Underline, action: 'underline', title: '下划线' },
+        { icon: Strikethrough, action: 'strike', title: '删除线' },
+        { icon: Code, action: 'code', title: '行内代码' },
+      ],
+    },
+    // 列表
+    {
+      items: [
+        { icon: List, action: 'bulletList', title: '无序列表' },
+        { icon: ListOrdered, action: 'orderedList', title: '有序列表' },
+        { icon: CheckSquare, action: 'taskList', title: '任务列表' },
+      ],
+    },
+    // 其他元素
+    {
+      items: [
+        { icon: Quote, action: 'blockquote', title: '引用' },
+        { icon: Minus, action: 'horizontalRule', title: '分割线' },
+        { icon: Table, action: 'table', title: '表格' },
+      ],
+    },
+    // 插入
+    {
+      items: [
+        { icon: LinkIcon, action: 'link', title: '插入链接' },
+        { icon: ImageIcon, action: 'image', title: '插入图片' },
+      ],
+    },
+    // 表格操作
+    {
+      items: [
+        { icon: ArrowUpToLine, action: 'addRowBefore', title: '在上方添加行' },
+        { icon: ArrowDownToLine, action: 'addRowAfter', title: '在下方添加行' },
+        { icon: ArrowLeftToLine, action: 'addColumnBefore', title: '在左侧添加列' },
+        { icon: ArrowRightToLine, action: 'addColumnAfter', title: '在右侧添加列' },
+        { icon: Trash2, action: 'deleteRow', title: '删除行' },
+        { icon: MinusCircle, action: 'deleteColumn', title: '删除列' },
+        { icon: Table2, action: 'deleteTable', title: '删除表格' },
+      ],
+    },
+    // 对齐
+    {
+      items: [
+        { icon: AlignLeft, action: 'alignLeft', title: '左对齐' },
+        { icon: AlignCenter, action: 'alignCenter', title: '居中' },
+        { icon: AlignRight, action: 'alignRight', title: '右对齐' },
+      ],
+    },
+    // 导出
+    {
+      items: [
+        { icon: Download, action: 'exportMarkdown', title: '导出 Markdown' },
+        { icon: Keyboard, action: 'toggleShortcuts', title: '快捷键' },
+      ],
+    },
+  ]
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 bg-white overflow-x-auto">
+        <div className="flex items-center gap-1 min-w-max">
+          {toolbarGroups.map((group, groupIndex) => (
+            <div key={groupIndex} className="flex items-center gap-0.5">
+              {groupIndex > 0 && <div className="w-px h-6 bg-gray-200 mx-2" />}
+              {group.items.map((item) => {
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.action}
+                    onClick={() => handleAction(item.action)}
+                    disabled={
+                      (item.action === 'undo' && !editorState.canUndo) ||
+                      (item.action === 'redo' && !editorState.canRedo)
+                    }
+                    className={cn(
+                      "p-2 hover:bg-gray-100 rounded-md transition-colors flex-shrink-0",
+                      (item.action === 'bold' && editorState.isBold) ||
+                      (item.action === 'italic' && editorState.isItalic) ||
+                      (item.action === 'underline' && editorState.isUnderline) ||
+                      (item.action === 'strike' && editorState.isStrike) ||
+                      (item.action === 'code' && editorState.isCode) ||
+                      (item.action === 'h1' && editorState.isH1) ||
+                      (item.action === 'h2' && editorState.isH2) ||
+                      (item.action === 'h3' && editorState.isH3) ||
+                      (item.action === 'bulletList' && editorState.isBulletList) ||
+                      (item.action === 'orderedList' && editorState.isOrderedList) ||
+                      (item.action === 'taskList' && editorState.isTaskList) ||
+                      (item.action === 'blockquote' && editorState.isBlockquote) ||
+                      (item.action === 'alignLeft' && editorState.isAlignLeft) ||
+                      (item.action === 'alignCenter' && editorState.isAlignCenter) ||
+                      (item.action === 'alignRight' && editorState.isAlignRight)
+                        ? "bg-blue-100 text-blue-600"
+                        : "",
+                      ((item.action === 'undo' && !editorState.canUndo) ||
+                      (item.action === 'redo' && !editorState.canRedo))
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    )}
+                    title={item.title}
+                  >
+                    <Icon className="w-4 h-4 text-gray-700" />
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 快捷键面板 */}
+      {showShortcuts && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/20 z-10"
+            onClick={() => setShowShortcuts(false)}
+          />
+          <div className="absolute right-4 top-14 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20 w-80">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-800">键盘快捷键</h3>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">粗体</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+B</kbd>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">斜体</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+I</kbd>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">插入链接</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+K</kbd>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">撤销</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+Z</kbd>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">重做</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Ctrl+Shift+Z</kbd>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">快捷菜单</span>
+                <kbd className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">/</kbd>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
