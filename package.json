@@ -1,6 +1,6 @@
 {
   "name": "voidnote",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "极简风格的 Markdown 知识库桌面应用",
   "author": "htao-123",
   "main": "out/main/index.js",

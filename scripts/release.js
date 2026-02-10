@@ -3,6 +3,12 @@
 const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const readline = require('readline')
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+})
 
 // 读取当前版本
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8'))
@@ -28,32 +34,59 @@ const nextVersion = incrementVersion(currentVersion, 'patch')
 console.log(`\n当前版本: v${currentVersion}`)
 console.log(`新版本: v${nextVersion} (自动叠加)\n`)
 
-// 更新 package.json 中的版本号
-packageJson.version = nextVersion
-fs.writeFileSync(
-  path.join(__dirname, '../package.json'),
-  JSON.stringify(packageJson, null, 2) + '\n'
-)
+// 询问发布说明
+rl.question('请输入发布说明 (留空跳过): ', (notes) => {
+  notes = notes.trim()
 
-console.log(`准备发布 v${nextVersion}...`)
+  // 更新 package.json 中的版本号
+  packageJson.version = nextVersion
+  fs.writeFileSync(
+    path.join(__dirname, '../package.json'),
+    JSON.stringify(packageJson, null, 2) + '\n'
+  )
 
-try {
-  // 提交版本更新
-  execSync(`git add -A`, { stdio: 'inherit' })
-  execSync(`git commit -m "版本更新 v${nextVersion}"`, { stdio: 'inherit' })
+  // 保存发布说明到文件
+  if (notes) {
+    fs.writeFileSync(
+      path.join(__dirname, '../RELEASE_NOTES.md'),
+      notes + '\n'
+    )
+    execSync(`git add RELEASE_NOTES.md`, { stdio: 'inherit' })
+  }
 
-  // 创建标签
-  execSync(`git tag -a v${nextVersion} -m "v${nextVersion}"`, { stdio: 'inherit' })
+  console.log(`\n准备发布 v${nextVersion}...`)
 
-  // 推送代码和标签
-  console.log('\n推送到远程仓库...')
-  execSync(`git push origin master`, { stdio: 'inherit' })
-  execSync(`git push origin v${nextVersion}`, { stdio: 'inherit' })
+  try {
+    // 提交版本更新
+    execSync(`git add -A`, { stdio: 'inherit' })
+    const commitMessage = notes
+      ? `版本更新 v${nextVersion}\n\n${notes}`
+      : `版本更新 v${nextVersion}`
+    execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' })
 
-  console.log(`\n✅ v${nextVersion} 已发布!`)
-  console.log(`📦 GitHub Actions 正在构建...`)
-  console.log(`🔗 查看进度: https://github.com/htao-123/voidnote/actions\n`)
-} catch (error) {
-  console.error('❌ 发布失败:', error.message)
-  process.exit(1)
-}
+    // 创建标签（带发布说明）
+    const tagMessage = notes || `v${nextVersion}`
+    execSync(`git tag -a v${nextVersion} -m "${tagMessage}"`, { stdio: 'inherit' })
+
+    // 推送代码和标签
+    console.log('\n推送到远程仓库...')
+    execSync(`git push origin master`, { stdio: 'inherit' })
+    execSync(`git push origin v${nextVersion}`, { stdio: 'inherit' })
+
+    console.log(`\n✅ v${nextVersion} 已发布!`)
+    console.log(`📦 GitHub Actions 正在构建...`)
+    console.log(`🔗 查看进度: https://github.com/htao-123/voidnote/actions\n`)
+
+    // 清理发布说明文件
+    if (fs.existsSync(path.join(__dirname, '../RELEASE_NOTES.md'))) {
+      fs.unlinkSync(path.join(__dirname, '../RELEASE_NOTES.md'))
+      execSync(`git add -u RELEASE_NOTES.md`, { stdio: 'silent' })
+    }
+
+    rl.close()
+  } catch (error) {
+    console.error('❌ 发布失败:', error.message)
+    rl.close()
+    process.exit(1)
+  }
+})

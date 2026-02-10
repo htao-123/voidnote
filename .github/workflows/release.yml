@@ -36,7 +36,7 @@ jobs:
         with:
           files: |
             release/VoidNote*.exe
-          generate_release_notes: true
+          generate_release_notes: false
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
