@@ -64,6 +64,45 @@ const commands: Command[] = [
     },
   },
   {
+    title: '四级标题',
+    description: '更小标题',
+    icon: 'h4',
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode('heading', { level: 4 })
+        .run()
+    },
+  },
+  {
+    title: '五级标题',
+    description: '极小标题',
+    icon: 'h5',
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode('heading', { level: 5 })
+        .run()
+    },
+  },
+  {
+    title: '六级标题',
+    description: '最小标题',
+    icon: 'h6',
+    command: ({ editor, range }) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode('heading', { level: 6 })
+        .run()
+    },
+  },
+  {
     title: '无序列表',
     description: '项目符号列表',
     icon: 'ul',

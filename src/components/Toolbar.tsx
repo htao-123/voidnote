@@ -7,6 +7,9 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Heading4,
+  Heading5,
+  Heading6,
   List,
   ListOrdered,
   Quote,
@@ -20,22 +23,20 @@ import {
   CheckSquare,
   Undo,
   Redo,
-  Download,
-  FileText,
-  File,
   Keyboard,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Rows,
+  Columns,
   Trash2,
-  ArrowUpToLine,
-  ArrowDownToLine,
-  ArrowLeftToLine,
-  ArrowRightToLine,
-  Table2,
-  MinusCircle,
+  Maximize,
+  Minimize,
 } from 'lucide-react'
 import { useCurrentEditor, useEditorState } from '@tiptap/react'
+import React from 'react'
 import { cn } from '../lib/utils'
-import { exportToMarkdown } from '../lib/shortcuts'
-import { ExportManager } from '../lib/exportDocument'
 import { useDocumentStore } from '../stores/documentStore'
 import { useState, useEffect } from 'react'
 import InputPrompt from './InputPrompt'
@@ -50,6 +51,7 @@ export default function Toolbar() {
   const [linkPrompt, setLinkPrompt] = useState({ isOpen: false })
   const [imagePrompt, setImagePrompt] = useState({ isOpen: false })
   const [imageChoicePrompt, setImageChoicePrompt] = useState({ isOpen: false })
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // 键盘快捷键监听
   useEffect(() => {
@@ -65,6 +67,25 @@ export default function Toolbar() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [saveDocument])
 
+  // 监听全屏状态变化（ESC键退出全屏时同步状态）
+  useEffect(() => {
+    const checkFullscreen = async () => {
+      if (window.electronAPI) {
+        const fullscreen = await window.electronAPI.isFullscreen()
+        setIsFullscreen(fullscreen)
+      }
+    }
+    checkFullscreen()
+
+    // 监听全屏变化事件
+    const handleFullscreenChange = () => {
+      checkFullscreen()
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
   // 使用 useEditorState 优化性能，只在相关状态变化时重新渲染
   const editorState = useEditorState({
     editor,
@@ -77,6 +98,9 @@ export default function Toolbar() {
       isH1: editor?.isActive('heading', { level: 1 }) ?? false,
       isH2: editor?.isActive('heading', { level: 2 }) ?? false,
       isH3: editor?.isActive('heading', { level: 3 }) ?? false,
+      isH4: editor?.isActive('heading', { level: 4 }) ?? false,
+      isH5: editor?.isActive('heading', { level: 5 }) ?? false,
+      isH6: editor?.isActive('heading', { level: 6 }) ?? false,
       isBulletList: editor?.isActive('bulletList') ?? false,
       isOrderedList: editor?.isActive('orderedList') ?? false,
       isTaskList: editor?.isActive('taskList') ?? false,
@@ -84,6 +108,7 @@ export default function Toolbar() {
       isAlignLeft: editor?.isActive({ textAlign: 'left' }) ?? false,
       isAlignCenter: editor?.isActive({ textAlign: 'center' }) ?? false,
       isAlignRight: editor?.isActive({ textAlign: 'right' }) ?? false,
+      isInHeader: editor?.isActive('tableHeader') ?? false,
       canUndo: editor?.can().undo() ?? false,
       canRedo: editor?.can().redo() ?? false,
     }),
@@ -109,6 +134,15 @@ export default function Toolbar() {
         break
       case 'h3':
         editor.chain().focus().toggleHeading({ level: 3 }).run()
+        break
+      case 'h4':
+        editor.chain().focus().toggleHeading({ level: 4 }).run()
+        break
+      case 'h5':
+        editor.chain().focus().toggleHeading({ level: 5 }).run()
+        break
+      case 'h6':
+        editor.chain().focus().toggleHeading({ level: 6 }).run()
         break
       case 'bold':
         editor.chain().focus().toggleBold().run()
@@ -158,17 +192,11 @@ export default function Toolbar() {
       case 'alignRight':
         editor.chain().focus().setTextAlign('right').run()
         break
-      case 'exportMarkdown':
-        handleExportMarkdown()
-        break
-      case 'exportHTML':
-        await handleExportHTML()
-        break
-      case 'exportPDF':
-        await handleExportPDF()
-        break
       case 'toggleShortcuts':
         setShowShortcuts(!showShortcuts)
+        break
+      case 'toggleFullscreen':
+        await handleToggleFullscreen()
         break
       // 表格操作
       case 'addRowBefore':
@@ -195,64 +223,47 @@ export default function Toolbar() {
     }
   }
 
-  const handleExportMarkdown = () => {
-    if (!currentDocument) return
-
-    const markdown = exportToMarkdown(editor)
-    const blob = new Blob([markdown], { type: 'text/markdown' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${currentDocument.title}.md`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-
-  const handleExportHTML = async () => {
-    if (!currentDocument) {
-      alert('请先打开一个文档')
+  // 全屏切换
+  const handleToggleFullscreen = async () => {
+    if (!window.electronAPI) {
       return
     }
-
-    try {
-      await ExportManager.exportAsHTML(currentDocument)
-    } catch (error: any) {
-      alert(`导出 HTML 失败: ${error.message}`)
+    const result = await window.electronAPI.toggleFullscreen()
+    if (result.success && result.isFullScreen !== undefined) {
+      setIsFullscreen(result.isFullScreen)
     }
   }
 
-  const handleExportPDF = async () => {
-    if (!currentDocument) {
-      alert('请先打开一个文档')
-      return
-    }
+  // 工具栏收起状态
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
-    try {
-      await ExportManager.exportAsPDF(currentDocument)
-    } catch (error: any) {
-      alert(`导出 PDF 失败: ${error.message}`)
-    }
-  }
   const toolbarGroups = [
-    // 历史记录
+    // 历史记录（2个按钮 - 纵向）
     {
+      id: 'history',
+      title: '历史',
       items: [
         { icon: Undo, action: 'undo', title: '撤销' },
         { icon: Redo, action: 'redo', title: '重做' },
       ],
     },
-    // 标题
+    // 标题（6个按钮 - 3×2网格）
     {
+      id: 'headings',
+      title: '标题',
       items: [
         { icon: Heading1, action: 'h1', title: '一级标题' },
         { icon: Heading2, action: 'h2', title: '二级标题' },
         { icon: Heading3, action: 'h3', title: '三级标题' },
+        { icon: Heading4, action: 'h4', title: '四级标题' },
+        { icon: Heading5, action: 'h5', title: '五级标题' },
+        { icon: Heading6, action: 'h6', title: '六级标题' },
       ],
     },
-    // 文本格式
+    // 文本格式（5个按钮 - 3×2网格）
     {
+      id: 'format',
+      title: '格式',
       items: [
         { icon: Bold, action: 'bold', title: '粗体' },
         { icon: Italic, action: 'italic', title: '斜体' },
@@ -261,109 +272,177 @@ export default function Toolbar() {
         { icon: Code, action: 'code', title: '行内代码' },
       ],
     },
-    // 列表
+    // 对齐（3个按钮 - 横向）
     {
-      items: [
-        { icon: List, action: 'bulletList', title: '无序列表' },
-        { icon: ListOrdered, action: 'orderedList', title: '有序列表' },
-        { icon: CheckSquare, action: 'taskList', title: '任务列表' },
-      ],
-    },
-    // 其他元素
-    {
-      items: [
-        { icon: Quote, action: 'blockquote', title: '引用' },
-        { icon: Minus, action: 'horizontalRule', title: '分割线' },
-        { icon: Table, action: 'table', title: '表格' },
-      ],
-    },
-    // 插入
-    {
-      items: [
-        { icon: LinkIcon, action: 'link', title: '插入链接' },
-        { icon: ImageIcon, action: 'image', title: '插入图片' },
-      ],
-    },
-    // 表格操作
-    {
-      items: [
-        { icon: ArrowUpToLine, action: 'addRowBefore', title: '在上方添加行' },
-        { icon: ArrowDownToLine, action: 'addRowAfter', title: '在下方添加行' },
-        { icon: ArrowLeftToLine, action: 'addColumnBefore', title: '在左侧添加列' },
-        { icon: ArrowRightToLine, action: 'addColumnAfter', title: '在右侧添加列' },
-        { icon: Trash2, action: 'deleteRow', title: '删除行' },
-        { icon: MinusCircle, action: 'deleteColumn', title: '删除列' },
-        { icon: Table2, action: 'deleteTable', title: '删除表格' },
-      ],
-    },
-    // 对齐
-    {
+      id: 'align',
+      title: '对齐',
       items: [
         { icon: AlignLeft, action: 'alignLeft', title: '左对齐' },
         { icon: AlignCenter, action: 'alignCenter', title: '居中' },
         { icon: AlignRight, action: 'alignRight', title: '右对齐' },
       ],
     },
-    // 主题和导出
+    // 列表（3个按钮 - 横向）
     {
+      id: 'lists',
+      title: '列表',
       items: [
-        { icon: Download, action: 'exportMarkdown', title: '导出 Markdown' },
-        { icon: FileText, action: 'exportHTML', title: '导出 HTML' },
-        { icon: File, action: 'exportPDF', title: '导出 PDF' },
+        { icon: List, action: 'bulletList', title: '无序列表' },
+        { icon: ListOrdered, action: 'orderedList', title: '有序列表' },
+        { icon: CheckSquare, action: 'taskList', title: '任务列表' },
+      ],
+    },
+    // 其他元素（4个按钮 - 横向）
+    {
+      id: 'elements',
+      title: '元素',
+      items: [
+        { icon: Quote, action: 'blockquote', title: '引用' },
+        { icon: Minus, action: 'horizontalRule', title: '分割线' },
+        { icon: Table, action: 'table', title: '表格' },
+        { icon: Trash2, action: 'deleteTable', title: '删除表格' },
+      ],
+    },
+    // 表格操作（6个按钮 - 3×2网格）
+    {
+      id: 'table',
+      title: '表格操作',
+      items: [
+        { icon: ArrowUp, action: 'addRowBefore', title: '在上方添加行' },
+        { icon: ArrowDown, action: 'addRowAfter', title: '在下方添加行' },
+        { icon: Rows, action: 'deleteRow', title: '删除行' },
+        { icon: ArrowLeft, action: 'addColumnBefore', title: '在左侧添加列' },
+        { icon: ArrowRight, action: 'addColumnAfter', title: '在右侧添加列' },
+        { icon: Columns, action: 'deleteColumn', title: '删除列' },
+      ],
+    },
+    // 插入（2个按钮 - 纵向）
+    {
+      id: 'insert',
+      title: '插入',
+      items: [
+        { icon: LinkIcon, action: 'link', title: '插入链接' },
+        { icon: ImageIcon, action: 'image', title: '插入图片' },
+      ],
+    },
+    // 快捷键（1个按钮）
+    {
+      id: 'shortcuts',
+      title: '快捷键',
+      items: [
         { icon: Keyboard, action: 'toggleShortcuts', title: '快捷键' },
       ],
     },
   ]
 
+  // 渲染单个按钮
+  const renderButton = (item: any) => {
+    const Icon = item.icon
+    const isDisabled =
+      (item.action === 'undo' && !editorState.canUndo) ||
+      (item.action === 'redo' && !editorState.canRedo) ||
+      (item.action === 'addRowBefore' && editorState.isInHeader)
+
+    return (
+      <button
+        key={item.action}
+        onClick={() => handleAction(item.action)}
+        disabled={isDisabled}
+        className={cn(
+          "p-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors",
+          (item.action === 'bold' && editorState.isBold) ||
+          (item.action === 'italic' && editorState.isItalic) ||
+          (item.action === 'underline' && editorState.isUnderline) ||
+          (item.action === 'strike' && editorState.isStrike) ||
+          (item.action === 'code' && editorState.isCode) ||
+          (item.action === 'h1' && editorState.isH1) ||
+          (item.action === 'h2' && editorState.isH2) ||
+          (item.action === 'h3' && editorState.isH3) ||
+          (item.action === 'h4' && editorState.isH4) ||
+          (item.action === 'h5' && editorState.isH5) ||
+          (item.action === 'h6' && editorState.isH6) ||
+          (item.action === 'bulletList' && editorState.isBulletList) ||
+          (item.action === 'orderedList' && editorState.isOrderedList) ||
+          (item.action === 'taskList' && editorState.isTaskList) ||
+          (item.action === 'blockquote' && editorState.isBlockquote) ||
+          (item.action === 'alignLeft' && editorState.isAlignLeft) ||
+          (item.action === 'alignCenter' && editorState.isAlignCenter) ||
+          (item.action === 'alignRight' && editorState.isAlignRight)
+            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+            : "",
+          isDisabled
+            ? "opacity-50 cursor-not-allowed"
+            : ""
+        )}
+        title={
+          item.action === 'addRowBefore' && editorState.isInHeader
+            ? '表头上方不能添加行'
+            : item.title
+        }
+      >
+        <Icon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+      </button>
+    )
+  }
+
   return (
     <div className="relative">
-      <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-x-auto">
-        <div className="flex items-center gap-1 min-w-max">
-          {toolbarGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className="flex items-center gap-0.5">
-              {groupIndex > 0 && <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2" />}
-              {group.items.map((item) => {
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.action}
-                    onClick={() => handleAction(item.action)}
-                    disabled={
-                      (item.action === 'undo' && !editorState.canUndo) ||
-                      (item.action === 'redo' && !editorState.canRedo)
-                    }
-                    className={cn(
-                      "p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md transition-colors flex-shrink-0",
-                      (item.action === 'bold' && editorState.isBold) ||
-                      (item.action === 'italic' && editorState.isItalic) ||
-                      (item.action === 'underline' && editorState.isUnderline) ||
-                      (item.action === 'strike' && editorState.isStrike) ||
-                      (item.action === 'code' && editorState.isCode) ||
-                      (item.action === 'h1' && editorState.isH1) ||
-                      (item.action === 'h2' && editorState.isH2) ||
-                      (item.action === 'h3' && editorState.isH3) ||
-                      (item.action === 'bulletList' && editorState.isBulletList) ||
-                      (item.action === 'orderedList' && editorState.isOrderedList) ||
-                      (item.action === 'taskList' && editorState.isTaskList) ||
-                      (item.action === 'blockquote' && editorState.isBlockquote) ||
-                      (item.action === 'alignLeft' && editorState.isAlignLeft) ||
-                      (item.action === 'alignCenter' && editorState.isAlignCenter) ||
-                      (item.action === 'alignRight' && editorState.isAlignRight)
-                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "",
-                      ((item.action === 'undo' && !editorState.canUndo) ||
-                      (item.action === 'redo' && !editorState.canRedo))
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
+      {/* 工具栏内容 */}
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="px-3 py-2 overflow-x-auto">
+          <div className="flex items-center min-w-max">
+            {/* 折叠/展开按钮 - 最左侧 */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors flex-shrink-0"
+              title={isCollapsed ? '展开工具栏' : '收起工具栏'}
+            >
+              <svg
+                className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {!isCollapsed && (
+              <>
+                <div className="w-px h-8 bg-gray-300 dark:bg-gray-600 flex-shrink-0 mx-4" />
+                {toolbarGroups.map((group, groupIndex) => (
+                  <React.Fragment key={group.id}>
+                    {groupIndex > 0 && <div className="w-px h-8 bg-gray-300 dark:bg-gray-600 flex-shrink-0 mx-4" />}
+                    {/* 按钮组 */}
+                    {group.items.length > 3 ? (
+                      // 超过3个按钮用3×2网格布局
+                      <div className="grid grid-cols-3 gap-x-0.5 gap-y-0.5">
+                        {group.items.map(renderButton)}
+                      </div>
+                    ) : (
+                      // 1-3个按钮横向排列
+                      <div className="flex gap-0.5">
+                        {group.items.map(renderButton)}
+                      </div>
                     )}
-                    title={item.title}
-                  >
-                    <Icon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-                  </button>
-                )
-              })}
-            </div>
-          ))}
+                  </React.Fragment>
+                ))}
+                <div className="w-px h-8 bg-gray-300 dark:bg-gray-600 flex-shrink-0 mx-4" />
+                {/* 全屏按钮 */}
+                <button
+                  onClick={() => handleAction('toggleFullscreen')}
+                  className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors flex-shrink-0"
+                  title={isFullscreen ? '退出全屏' : '全屏'}
+                >
+                  {isFullscreen ? (
+                    <Minimize className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  ) : (
+                    <Maximize className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  )}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

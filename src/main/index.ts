@@ -279,6 +279,34 @@ ipcMain.handle('file-exists', async (_, filePath: string) => {
   }
 })
 
+// 检查文件夹是否为空
+ipcMain.handle('is-directory-empty', async (_, dirPath: string) => {
+  try {
+    // 参数验证
+    if (!dirPath || typeof dirPath !== 'string') {
+      return { success: false, isEmpty: false, error: 'Invalid directory path' }
+    }
+
+    // 检查是否是目录
+    const stats = await fs.promises.stat(dirPath)
+    if (!stats.isDirectory()) {
+      return { success: false, isEmpty: false, error: 'Path is not a directory' }
+    }
+
+    // 读取目录内容
+    const files = await fs.promises.readdir(dirPath)
+    const isEmpty = files.length === 0
+
+    return { success: true, isEmpty }
+  } catch (error: any) {
+    // 如果目录不存在，视为"空"（可以安全删除）
+    if (error.code === 'ENOENT') {
+      return { success: true, isEmpty: true }
+    }
+    return { success: false, isEmpty: false, error: error.message }
+  }
+})
+
 // 获取应用数据目录
 ipcMain.handle('get-app-data-path', async () => {
   return app.getPath('userData')
@@ -411,83 +439,30 @@ ipcMain.handle('clear-workspace', async () => {
   return { success: true }
 })
 
-// ========== 导出功能 ==========
+// ========== 全屏模式 ==========
 
-// 保存 HTML 文件
-ipcMain.handle('save-html-file', async (_, { fileName, content }) => {
+// 切换全屏模式
+ipcMain.handle('toggle-fullscreen', async () => {
+  if (!mainWindow) {
+    return { success: false, error: 'No window available' }
+  }
+
   try {
-    const result = await dialog.showSaveDialog(mainWindow!, {
-      defaultPath: fileName,
-      filters: [
-        { name: 'HTML Files', extensions: ['html'] },
-        { name: 'All Files', extensions: ['*'] }
-      ]
-    })
-
-    if (result.canceled || !result.filePath) {
-      return { success: false, canceled: true }
+    if (mainWindow.isFullScreen()) {
+      mainWindow.setFullScreen(false)
+    } else {
+      mainWindow.setFullScreen(true)
     }
-
-    await fs.promises.writeFile(result.filePath, content, 'utf-8')
-    return { success: true, filePath: result.filePath }
+    return { success: true, isFullScreen: mainWindow.isFullScreen() }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
 })
 
-// 导出 PDF 文件
-ipcMain.handle('export-pdf-file', async (_, { fileName, htmlContent }) => {
-  try {
-    const result = await dialog.showSaveDialog(mainWindow!, {
-      defaultPath: fileName,
-      filters: [
-        { name: 'PDF Files', extensions: ['pdf'] },
-        { name: 'All Files', extensions: ['*'] }
-      ]
-    })
-
-    if (result.canceled || !result.filePath) {
-      return { success: false, canceled: true }
-    }
-
-    // 创建一个隐藏的 BrowserWindow 来渲染 HTML
-    const pdfWindow = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        sandbox: true,
-      },
-    })
-
-    // 加载 HTML 内容
-    await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`)
-
-    // 等待页面加载完成
-    await new Promise<void>((resolve) => {
-      if (pdfWindow.webContents.isLoading()) {
-        pdfWindow.webContents.on('did-finish-load', () => resolve())
-      } else {
-        resolve()
-      }
-    })
-
-    // 生成 PDF
-    const pdfBuffer = await pdfWindow.webContents.printToPDF({
-      pageSize: 'A4',
-      printBackground: true,
-      landscape: false,
-    })
-
-    // 保存 PDF
-    await fs.promises.writeFile(result.filePath, pdfBuffer)
-
-    // 关闭窗口
-    pdfWindow.close()
-
-    return { success: true, filePath: result.filePath }
-  } catch (error: any) {
-    console.error('PDF export error:', error)
-    return { success: false, error: error.message }
+// 获取全屏状态
+ipcMain.handle('is-fullscreen', async () => {
+  if (!mainWindow) {
+    return false
   }
+  return mainWindow.isFullScreen()
 })

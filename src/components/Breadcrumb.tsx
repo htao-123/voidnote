@@ -7,7 +7,7 @@ export default function Breadcrumb() {
   if (!currentDocument) return null
 
   const path = getDocumentPath(currentDocument.id)
-  const stats = getWordCount(currentDocument.content)
+  const stats = getWordCount(currentDocument.json || '')
 
   // 格式化阅读时间
   const formatReadTime = (minutes: number) => {

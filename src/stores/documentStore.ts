@@ -35,9 +35,9 @@ interface DocumentStore {
   // 操作方法
   setCurrentDocument: (document: Document | null) => void
   setSelectedDocumentId: (id: string | null) => void
-  addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => Document
-  updateDocument: (id: string, updates: Partial<Document>) => void
-  deleteDocument: (id: string) => void
+  addDocument: (document: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Document>
+  updateDocument: (id: string, updates: Partial<Document>) => Promise<void>
+  deleteDocument: (id: string) => Promise<void>
   toggleFolder: (id: string) => void
   isExpanded: (id: string) => boolean
   getDocumentPath: (documentId: string) => Document[]  // 获取文档路径
@@ -107,21 +107,40 @@ export const useDocumentStore = create<DocumentStore>((set, get) => {
 
     setSelectedDocumentId: (id: string | null) => set({ selectedDocumentId: id }),
 
-    addDocument: (doc: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => {
+    addDocument: async (doc: Omit<Document, 'id' | 'createdAt' | 'updatedAt'>) => {
       const newDoc: Document = {
         ...doc,
         id: generateId(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }
+
+      // 如果有工作区，立即保存到文件系统
+      const state = get()
+      if (state.workspace) {
+        await markdownStorage.saveDocument(newDoc, [...state.documents, newDoc])
+      }
+
       set((state) => ({
         documents: [...state.documents, newDoc],
-        hasUnsavedChanges: true
+        hasUnsavedChanges: !state.workspace // 有工作区时已保存，无工作区时标记为未保存
       }))
       return newDoc
     },
 
-    updateDocument: (id: string, updates: Partial<Document>) => {
+    updateDocument: async (id: string, updates: Partial<Document>) => {
+      const state = get()
+      const doc = state.documents.find(d => d.id === id)
+
+      // 如果有工作区且标题发生变化，需要重命名文件
+      if (state.workspace && doc && updates.title && updates.title !== doc.title) {
+        const result = await markdownStorage.rename(doc, updates.title, state.documents)
+        if (result.success && result.actualTitle) {
+          // 使用实际保存的标题（可能添加了后缀以避免冲突）
+          updates.title = result.actualTitle
+        }
+      }
+
       set((state) => ({
         documents: state.documents.map((doc) =>
           doc.id === id ? { ...doc, ...updates, updatedAt: Date.now() } : doc
@@ -130,15 +149,23 @@ export const useDocumentStore = create<DocumentStore>((set, get) => {
           state.currentDocument?.id === id
             ? { ...state.currentDocument, ...updates, updatedAt: Date.now() }
             : state.currentDocument,
-        hasUnsavedChanges: true,
+        hasUnsavedChanges: !state.workspace || (!!updates.title && updates.title !== doc?.title), // 有工作区时，标题变化需要标记为未保存（内容变化会通过自动保存处理）
       }))
     },
 
-    deleteDocument: (id: string) => {
+    deleteDocument: async (id: string) => {
+      const state = get()
+      const doc = state.documents.find(d => d.id === id)
+
+      // 如果有工作区，从文件系统删除
+      if (state.workspace && doc) {
+        await markdownStorage.delete(doc, state.documents)
+      }
+
       set((state) => ({
         documents: state.documents.filter((doc) => doc.id !== id && doc.parentId !== id),
         currentDocument: state.currentDocument?.id === id ? null : state.currentDocument,
-        hasUnsavedChanges: true,
+        hasUnsavedChanges: !state.workspace, // 有工作区时已同步删除，无工作区时标记为未保存
       }))
     },
 
@@ -433,20 +460,52 @@ export const useDocumentStore = create<DocumentStore>((set, get) => {
 
     // 获取字数统计
     getWordCount: (content: string): { words: number; chars: number; readTime: number } => {
-      // 移除 HTML 标签，获取纯文本
-      const text = content.replace(/<[^>]*>/g, '').trim()
+      // 从 TipTap JSON 中提取文本内容
+      const extractTextFromJSON = (json: any): string => {
+        if (!json) return ''
+        if (typeof json === 'string') {
+          try {
+            json = JSON.parse(json)
+          } catch {
+            return json // 如果不是有效 JSON，当作纯文本处理
+          }
+        }
+
+        let text = ''
+
+        // 递归提取文本
+        const traverse = (node: any) => {
+          if (!node) return
+          if (typeof node === 'string') {
+            text += node
+            return
+          }
+          if (node.type === 'text' && node.text) {
+            text += node.text
+          }
+          if (node.content && Array.isArray(node.content)) {
+            node.content.forEach(traverse)
+          }
+        }
+
+        traverse(json)
+        return text
+      }
+
+      // 获取纯文本内容
+      const plainText = extractTextFromJSON(content).trim()
 
       // 中文字符数
-      const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length
+      const chineseChars = (plainText.match(/[\u4e00-\u9fa5]/g) || []).length
 
       // 英文单词数
-      const englishWords = (text.match(/[a-zA-Z]+/g) || []).length
+      const englishWords = (plainText.match(/[a-zA-Z]+/g) || []).length
 
       // 数字数量
-      const numbers = (text.match(/\d+/g) || []).length
+      const numbers = (plainText.match(/\d+/g) || []).length
 
-      // 总字符数（不包括空格和标点）
-      const totalChars = text.replace(/\s+/g, '').length
+      // 总字符数（不包括空格）
+      const totalChars = plainText.replace(/\s+/g, '').length
 
       // 总字数（中文+英文+数字）
       const totalWords = chineseChars + englishWords + numbers

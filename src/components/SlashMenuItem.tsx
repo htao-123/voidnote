@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useState } from 'react'
-import { Check, Type, Heading1, Heading2, Heading3, List, ListOrdered, CheckSquare, Quote, Code, Minus, Table } from 'lucide-react'
+import { Check, Type, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, CheckSquare, Quote, Code, Minus, Table } from 'lucide-react'
 import { commands } from './SlashMenu'
 
 interface SlashMenuItemProps {
@@ -13,6 +13,9 @@ const iconMap = {
   h1: Heading1,
   h2: Heading2,
   h3: Heading3,
+  h4: Heading4,
+  h5: Heading5,
+  h6: Heading6,
   ul: List,
   ol: ListOrdered,
   check: CheckSquare,

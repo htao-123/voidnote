@@ -253,12 +253,84 @@ class MarkdownStorage {
       // 检查是否有子文档
       const hasChildren = allDocuments.some(d => d.parentId === doc.id)
 
-      const result = await window.electronAPI.deleteMarkdown(
-        filePath,
-        hasChildren // 如果有子文档，需要删除文件夹
-      )
+      // 1. 先删除 .md 文件
+      let mdFileDeleted = true
+      const mdFileExists = await window.electronAPI.fileExists(filePath)
+      if (mdFileExists) {
+        const mdResult = await window.electronAPI.deleteMarkdown(filePath, false)
+        mdFileDeleted = mdResult.success
+        if (!mdFileDeleted) {
+          console.error('[MarkdownStorage] Failed to delete .md file:', mdResult.error)
+        }
+      }
 
-      return result
+      // 2. 如果有子文档，删除同名文件夹
+      let folderDeleted = true
+      if (hasChildren) {
+        // 获取文件夹路径（去掉 .md 后缀）
+        const folderPath = filePath.slice(0, -3) // 移除 '.md'
+        const folderExists = await window.electronAPI.fileExists(folderPath)
+        if (folderExists) {
+          const folderResult = await window.electronAPI.deleteMarkdown(folderPath, true)
+          folderDeleted = folderResult.success
+          if (!folderDeleted) {
+            console.error('[MarkdownStorage] Failed to delete folder:', folderResult.error)
+          }
+        }
+      }
+
+      // 3. 如果是子文档，检查父文档的文件夹是否为空，为空则删除
+      let parentFolderDeleted = true
+      if (doc.parentId) {
+        const parentFolderResult = await this.cleanEmptyParentFolder(doc, allDocuments)
+        parentFolderDeleted = parentFolderResult.success
+        if (!parentFolderDeleted) {
+          console.error('[MarkdownStorage] Failed to clean parent folder:', parentFolderResult.error)
+        }
+      }
+
+      return { success: mdFileDeleted && folderDeleted && parentFolderDeleted }
+    } catch (error: any) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * 清理空的父文件夹
+   * @param doc 子文档
+   * @param allDocuments 所有文档列表
+   */
+  private async cleanEmptyParentFolder(doc: Document, allDocuments: Document[]): Promise<{ success: boolean; error?: string }> {
+    if (!window.electronAPI || !this.workspace) {
+      return { success: false, error: 'No workspace selected' }
+    }
+
+    try {
+      // 获取父文档
+      const parentDoc = allDocuments.find(d => d.id === doc.parentId)
+      if (!parentDoc) {
+        return { success: true } // 没有父文档，无需清理
+      }
+
+      // 获取父文档的文件夹路径（父文档.md 去掉 .md 后缀）
+      const parentFolderPath = this.getDocumentPath(parentDoc, allDocuments).slice(0, -3)
+
+      // 检查该文件夹是否为空
+      const checkResult = await window.electronAPI.isDirectoryEmpty(parentFolderPath)
+      if (!checkResult.success) {
+        return { success: false, error: checkResult.error }
+      }
+
+      // 如果为空，删除该文件夹
+      if (checkResult.isEmpty) {
+        const deleteResult = await window.electronAPI.deleteMarkdown(parentFolderPath, true)
+        if (!deleteResult.success) {
+          return { success: false, error: deleteResult.error }
+        }
+        console.log('[MarkdownStorage] Deleted empty parent folder:', parentFolderPath)
+      }
+
+      return { success: true }
     } catch (error: any) {
       return { success: false, error: error.message }
     }

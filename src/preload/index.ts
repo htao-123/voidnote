@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('rename-markdown', { oldPath, newPath }),
   fileExists: (filePath: string) =>
     ipcRenderer.invoke('file-exists', filePath),
+  isDirectoryEmpty: (dirPath: string) =>
+    ipcRenderer.invoke('is-directory-empty', dirPath),
   getAppDataPath: () =>
     ipcRenderer.invoke('get-app-data-path'),
   openDocument: () =>
@@ -38,9 +40,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('set-workspace', workspace),
   clearWorkspace: () => ipcRenderer.invoke('clear-workspace'),
 
-  // 导出功能
-  saveHTMLFile: (fileName: string, content: string) =>
-    ipcRenderer.invoke('save-html-file', { fileName, content }),
-  exportPDFFile: (fileName: string, htmlContent: string) =>
-    ipcRenderer.invoke('export-pdf-file', { fileName, htmlContent })
+  // 全屏模式
+  toggleFullscreen: () =>
+    ipcRenderer.invoke('toggle-fullscreen'),
+  isFullscreen: () =>
+    ipcRenderer.invoke('is-fullscreen')
 })

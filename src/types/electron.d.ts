@@ -45,6 +45,7 @@ interface ElectronAPI {
   deleteMarkdown: (filePath: string, isDirectory: boolean) => Promise<{ success: boolean; error?: string }>
   renameMarkdown: (oldPath: string, newPath: string) => Promise<{ success: boolean; error?: string }>
   fileExists: (filePath: string) => Promise<boolean>
+  isDirectoryEmpty: (dirPath: string) => Promise<{ success: boolean; isEmpty: boolean; error?: string }>
 
   // 文件监听
   watchWorkspace: (workspacePath: string) => Promise<{ success: boolean; error?: string }>
@@ -80,9 +81,9 @@ interface ElectronAPI {
   setWorkspace: (workspace: WorkspaceConfig) => Promise<{ success: boolean }>
   clearWorkspace: () => Promise<{ success: boolean }>
 
-  // 导出功能
-  saveHTMLFile: (fileName: string, content: string) => Promise<{ success: boolean; filePath?: string; error?: string; canceled?: boolean }>
-  exportPDFFile: (fileName: string, htmlContent: string) => Promise<{ success: boolean; filePath?: string; error?: string; canceled?: boolean }>
+  // 全屏模式
+  toggleFullscreen: () => Promise<{ success: boolean; isFullScreen?: boolean; error?: string }>
+  isFullscreen: () => Promise<boolean>
 }
 
 declare global {

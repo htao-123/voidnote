@@ -6,7 +6,7 @@ export default function DocumentStats() {
 
   if (!currentDocument) return null
 
-  const stats = getWordCount(currentDocument.content)
+  const stats = getWordCount(currentDocument.json || '')
 
   const formatReadTime = (minutes: number) => {
     if (minutes < 1) return '少于1分钟'

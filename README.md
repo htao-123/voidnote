@@ -3,7 +3,7 @@
 > 基于 Electron + React + TipTap 构建的极简风格 Markdown 知识库应用
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Electron](https://img.shields.io/badge/Electron-34.3-blue.svg)](https://www.electronjs.org/)
+[![Electron](https://img.shields.io/badge/Electron-40.2-blue.svg)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-19.1-blue.svg)](https://react.dev/)
 
 ## ✨ 特性
@@ -12,6 +12,7 @@
 - 🎨 **极简 UI 设计** - 专注于内容，界面简洁
 - 🌓 **深色模式** - 支持浅色/深色主题切换
 - 🌳 **文档树管理** - 支持嵌套文件夹结构
+- 📑 **目录导航** - 自动生成文档目录，点击快速跳转
 - ⌨️ **快捷键支持** - 高效的键盘操作
 - 💾 **自动保存** - 停止输入后自动保存文档
 - 🖼️ **图片支持** - 支持 URL 和本地图片插入

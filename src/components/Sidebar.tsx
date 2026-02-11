@@ -48,7 +48,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
     }
   }, [editingId])
 
-  const handleCreateDocument = () => {
+  const handleCreateDocument = async () => {
     // 检查是否已有同名文档，生成唯一标题
     let baseTitle = '新建文档'
     let suffix = 1
@@ -59,7 +59,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
       uniqueTitle = baseTitle + ' (' + suffix + ')'
     }
 
-    const newDoc = addDocument({
+    const newDoc = await addDocument({
       title: uniqueTitle,
       content: '',
       json: JSON.stringify({ type: 'doc', content: [] }),
@@ -72,7 +72,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
   }
 
   // 创建子文档
-  const handleCreateChildDocument = (parentId: string) => {
+  const handleCreateChildDocument = async (parentId: string) => {
     // 检查是否已有同名子文档，生成唯一标题
     let baseTitle = '新建子文档'
     let suffix = 1
@@ -83,7 +83,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
       uniqueTitle = baseTitle + ' (' + suffix + ')'
     }
 
-    const newDoc = addDocument({
+    const newDoc = await addDocument({
       title: uniqueTitle,
       content: '',
       json: JSON.stringify({ type: 'doc', content: [] }),
@@ -115,19 +115,24 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
     setIsNewDocument(false)  // 重命名不是新文档
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingId && editTitle.trim()) {
-      updateDocument(editingId, { title: editTitle.trim() })
+      await updateDocument(editingId, { title: editTitle.trim() })
+      // 更新编辑框中的标题（可能因为重名而添加了后缀）
+      const doc = documents.find(d => d.id === editingId)
+      if (doc) {
+        setEditTitle(doc.title)
+      }
     }
     setEditingId(null)
     setEditTitle('')
     setIsNewDocument(false)
   }
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = async () => {
     // 如果是新创建的文档，取消时删除它
     if (isNewDocument && editingId) {
-      deleteDocument(editingId)
+      await deleteDocument(editingId)
       if (selectedDocumentId === editingId) {
         setSelectedDocumentId(null)
         setCurrentDocument(null)
@@ -138,9 +143,9 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
     setIsNewDocument(false)
   }
 
-  const handleDelete = (docId: string) => {
+  const handleDelete = async (docId: string) => {
     if (confirm('确定要删除这个文档吗？')) {
-      deleteDocument(docId)
+      await deleteDocument(docId)
       if (selectedDocumentId === docId) {
         setSelectedDocumentId(null)
         setCurrentDocument(null)
@@ -227,7 +232,7 @@ export default function Sidebar({ collapsed, onToggle, onOpenSettings }: Sidebar
                       if (e.key === 'Escape') handleCancelEdit()
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 px-2 py-0.5 text-sm bg-white dark:bg-gray-800 border border-blue-500 rounded focus:outline-none"
+                    className="flex-1 px-2 py-0.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-blue-500 rounded focus:outline-none"
                   />
                   <button onClick={handleSaveEdit} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600200 rounded">
                     <Check className="w-4 h-4 text-green-600" />
